@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MICU CRUD System - Patient Records</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 { text-align: center; }
+    section {
+      background: white;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 900px;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    input, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex: 1 1 200px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background-color: #0056b3; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td { 
+      padding: 10px; 
+      text-align: left; 
+      border-bottom: 1px solid #ddd; 
+    }
+    th { background-color: #007bff; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    .actions button { margin-right: 5px; }
+  </style>
+</head>
+<body>
+
+<h1>MICU CRUD System - Patient Records</h1>
+
+<section>
+  <h2>OUTPUT</h2>
+  <form id="record-form">
+      <input type="datetime-local" id="timeStamp" required />
+      <input type="text" placeholder="Urine" id="urine" />
+      <input type="text" placeholder="NGT Residuals" id="ngtResiduals" />
+      <input type="text" placeholder="Vomitus" id="vomitus" />
+      <input type="text" placeholder="Stools" id="stools" />
+      <input type="text" placeholder="Others" id="others" />
+      <button type="submit">Add Record</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Time Stamp</th>
+        <th>Urine</th>
+        <th>NGT Residuals</th>
+        <th>Vomitus</th>
+        <th>Stools</th>
+        <th>Others</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="record-list"></tbody>
+  </table>
+</section>
+
+<script>
+  async function fetchRecords() {
+    const tableBody = document.getElementById('record-list');
+    tableBody.innerHTML = '';
+    try {
+      const response = await fetch('http://localhost:8080/records');
+      const data = await response.json();
+      data.forEach(item => {
+        const row = document.createElement('tr');
+        ['id','timeStamp','urine','ngtResiduals','vomitus','stools','others'].forEach(field => {
+          const cell = document.createElement('td');
+          cell.textContent = item[field] ?? '';
+          row.appendChild(cell);
+        });
+
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = async () => {
+          const newData = {};
+          ['timeStamp','urine','ngtResiduals','vomitus','stools','others'].forEach(field => {
+            const value = item[field];
+            const newValue = prompt(`Update ${field}:`, value);
+            if(newValue !== null) {
+              newData[field] = newValue;
+            }
+          });
+          if(Object.keys(newData).length > 0) {
+            await fetch(`http://localhost:8080/records/${item.id}`, {
+              method:'PUT',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(newData)
+            });
+            fetchRecords();
+          }
+        };
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.onclick = async () => {
+          if(confirm('Delete this record?')) {
+            await fetch(`http://localhost:8080/records/${item.id}`, { method:'DELETE' });
+            fetchRecords();
+          }
+        };
+
+        const actionCell = document.createElement('td');
+        actionCell.appendChild(editBtn);
+        actionCell.appendChild(delBtn);
+        row.appendChild(actionCell);
+
+        tableBody.appendChild(row);
+      });
+    } catch (error) {
+      console.error('Error fetching records:', error);
+    }
+  }
+
+  // Handle form submit
+  document.getElementById('record-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const data = {
+      timeStamp: document.getElementById('timeStamp').value,
+      urine: document.getElementById('urine').value,
+      ngtResiduals: document.getElementById('ngtResiduals').value,
+      vomitus: document.getElementById('vomitus').value,
+      stools: document.getElementById('stools').value,
+      others: document.getElementById('others').value
+    };
+    await fetch('http://localhost:8080/records', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    document.getElementById('record-form').reset();
+    fetchRecords();
+  });
+
+  fetchRecords();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+class example: building, college
+Controller: buildingcontroller, collegecontroller
+Repository: buildingrepository, collegerepository
+Service: buildingservice, collegeservice
+
+
