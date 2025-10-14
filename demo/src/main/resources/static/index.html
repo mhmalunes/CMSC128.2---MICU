@@ -5,50 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MICU CRUD System - Patient Records</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
     h1 { text-align: center; }
-    section {
-      background: white;
-      padding: 20px;
-      margin: 20px auto;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 900px;
+    section { background: #fff; padding: 20px; margin: 20px auto; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,.1); max-width: 900px; }
+    form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    input[type="text"], input[type="number"], input[type="datetime-local"] {
+      padding: 10px; border: 1px solid #ccc; border-radius: 4px; flex: 1 1 180px;
     }
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    input, button {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      flex: 1 1 200px;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover { background-color: #0056b3; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td { 
-      padding: 10px; 
-      text-align: left; 
-      border-bottom: 1px solid #ddd; 
-    }
-    th { background-color: #007bff; color: white; }
-    tr:nth-child(even) { background-color: #f2f2f2; }
-    .actions button { margin-right: 5px; }
+    label.checkbox { display: flex; align-items: center; gap: 6px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
+    button { padding: 10px 14px; border: 0; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #007bff; color: #fff; }
+    tr:nth-child(even) { background: #f7f7f7; }
+    .actions button { margin-right: 6px; }
   </style>
 </head>
 <body>
@@ -57,14 +28,17 @@
 
 <section>
   <h2>OUTPUT</h2>
+
   <form id="record-form">
-      <input type="datetime-local" id="timeStamp" required />
-      <input type="text" placeholder="Urine" id="urine" />
-      <input type="text" placeholder="NGT Residuals" id="ngtResiduals" />
-      <input type="text" placeholder="Vomitus" id="vomitus" />
-      <input type="text" placeholder="Stools" id="stools" />
-      <input type="text" placeholder="Others" id="others" />
-      <button type="submit">Add Record</button>
+    <input type="datetime-local" id="timeStamp" />
+    <input type="number" id="urineMl"         placeholder="Urine (mL)" />
+    <input type="number" id="ngtResidualsMl"  placeholder="NGT Residuals (mL)" />
+    <input type="number" id="vomitusMl"       placeholder="Vomitus (mL)" />
+    <label class="checkbox" title="Stool present">
+      <input type="checkbox" id="stool" /> Stool
+    </label>
+    <input type="text"   id="others"          placeholder="Others" />
+    <button type="submit">Add Record</button>
   </form>
 
   <table>
@@ -72,10 +46,10 @@
       <tr>
         <th>ID</th>
         <th>Time Stamp</th>
-        <th>Urine</th>
-        <th>NGT Residuals</th>
-        <th>Vomitus</th>
-        <th>Stools</th>
+        <th>Urine (mL)</th>
+        <th>NGT Residuals (mL)</th>
+        <th>Vomitus (mL)</th>
+        <th>Stool</th>
         <th>Others</th>
         <th>Actions</th>
       </tr>
@@ -85,82 +59,123 @@
 </section>
 
 <script>
+  const API = '/outputs'; // same-origin; if different host, use full URL and ensure CORS
+
+  const fmtDateTime = (v) => {
+    if (!v) return '';
+    // display as local yyyy-MM-dd HH:mm
+    const d = new Date(v);
+    if (isNaN(d)) return v;
+    const pad = (n) => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const toIntOrNull = (v) => v === '' || v == null ? null : parseInt(v, 10);
+
   async function fetchRecords() {
-    const tableBody = document.getElementById('record-list');
-    tableBody.innerHTML = '';
+    const tbody = document.getElementById('record-list');
+    tbody.innerHTML = '';
     try {
-      const response = await fetch('http://localhost:8080/records');
-      const data = await response.json();
+      const res = await fetch(API);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
       data.forEach(item => {
-        const row = document.createElement('tr');
-        ['id','timeStamp','urine','ngtResiduals','vomitus','stools','others'].forEach(field => {
-          const cell = document.createElement('td');
-          cell.textContent = item[field] ?? '';
-          row.appendChild(cell);
+        const tr = document.createElement('tr');
+
+        const cells = [
+          item.id,
+          fmtDateTime(item.timeStamp),
+          item.urineMl ?? '',
+          item.ngtResidualsMl ?? '',
+          item.vomitusMl ?? '',
+          item.stool ? 'Yes' : 'No',
+          item.others ?? ''
+        ];
+        cells.forEach(val => {
+          const td = document.createElement('td');
+          td.textContent = val;
+          tr.appendChild(td);
         });
 
-        // Edit button
+        // Actions
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'actions';
+
         const editBtn = document.createElement('button');
         editBtn.textContent = 'Edit';
         editBtn.onclick = async () => {
-          const newData = {};
-          ['timeStamp','urine','ngtResiduals','vomitus','stools','others'].forEach(field => {
-            const value = item[field];
-            const newValue = prompt(`Update ${field}:`, value);
-            if(newValue !== null) {
-              newData[field] = newValue;
-            }
+          // simple prompts; in production, use a proper form/modal
+          const timeStamp = prompt('Time Stamp (YYYY-MM-DDTHH:mm:ss) or blank to keep', item.timeStamp ? item.timeStamp.replace('.000','') : '');
+          const urineMl = prompt('Urine mL', item.urineMl ?? '');
+          const ngtResidualsMl = prompt('NGT Residuals mL', item.ngtResidualsMl ?? '');
+          const vomitusMl = prompt('Vomitus mL', item.vomitusMl ?? '');
+          const stool = confirm('Is stool present? Click OK for Yes, Cancel for No.');
+          const others = prompt('Others', item.others ?? '');
+
+          const body = {
+            timeStamp: timeStamp ? timeStamp : item.timeStamp, // keep old if blank
+            urineMl: toIntOrNull(urineMl),
+            ngtResidualsMl: toIntOrNull(ngtResidualsMl),
+            vomitusMl: toIntOrNull(vomitusMl),
+            stool,
+            others: others || null
+          };
+
+          const res = await fetch(`${API}/${item.id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
           });
-          if(Object.keys(newData).length > 0) {
-            await fetch(`http://localhost:8080/records/${item.id}`, {
-              method:'PUT',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify(newData)
-            });
-            fetchRecords();
-          }
+          if (!res.ok) alert('Update failed: ' + res.status + ' ' + await res.text());
+          await fetchRecords();
         };
 
-        // Delete button
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete';
         delBtn.onclick = async () => {
-          if(confirm('Delete this record?')) {
-            await fetch(`http://localhost:8080/records/${item.id}`, { method:'DELETE' });
-            fetchRecords();
-          }
+          if (!confirm('Delete this record?')) return;
+          const res = await fetch(`${API}/${item.id}`, { method: 'DELETE' });
+          if (!res.ok) alert('Delete failed: ' + res.status + ' ' + await res.text());
+          await fetchRecords();
         };
 
-        const actionCell = document.createElement('td');
-        actionCell.appendChild(editBtn);
-        actionCell.appendChild(delBtn);
-        row.appendChild(actionCell);
-
-        tableBody.appendChild(row);
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(delBtn);
+        tr.appendChild(actionsTd);
+        tbody.appendChild(tr);
       });
-    } catch (error) {
-      console.error('Error fetching records:', error);
+    } catch (err) {
+      console.error('Fetch failed:', err);
+      alert('Load failed: ' + err.message);
     }
   }
 
-  // Handle form submit
-  document.getElementById('record-form').addEventListener('submit', async e => {
+  document.getElementById('record-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const data = {
-      timeStamp: document.getElementById('timeStamp').value,
-      urine: document.getElementById('urine').value,
-      ngtResiduals: document.getElementById('ngtResiduals').value,
-      vomitus: document.getElementById('vomitus').value,
-      stools: document.getElementById('stools').value,
-      others: document.getElementById('others').value
+    // Convert datetime-local to ISO with seconds
+    const tsRaw = document.getElementById('timeStamp').value; // e.g. "2025-10-14T19:45"
+    const body = {
+      timeStamp: tsRaw ? tsRaw + ':00' : null, // backend auto-fills if null
+      urineMl:         toIntOrNull(document.getElementById('urineMl').value),
+      ngtResidualsMl:  toIntOrNull(document.getElementById('ngtResidualsMl').value),
+      vomitusMl:       toIntOrNull(document.getElementById('vomitusMl').value),
+      stool:           document.getElementById('stool').checked,
+      others:          document.getElementById('others').value || null
     };
-    await fetch('http://localhost:8080/records', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(data)
-    });
-    document.getElementById('record-form').reset();
-    fetchRecords();
+
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      e.target.reset();
+      await fetchRecords();
+    } catch (err) {
+      console.error('Create failed:', err);
+      alert('Add failed: ' + err.message);
+    }
   });
 
   fetchRecords();

@@ -1,10 +1,10 @@
-package BIMS;
+package MICU;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BimsApplicationTests {
+class MicuApplicationTests {
 
 	@Test
 	void contextLoads() {
