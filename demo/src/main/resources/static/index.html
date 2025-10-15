@@ -2,184 +2,818 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MICU CRUD System - Patient Records</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-    h1 { text-align: center; }
-    section { background: #fff; padding: 20px; margin: 20px auto; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,.1); max-width: 900px; }
-    form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    input[type="text"], input[type="number"], input[type="datetime-local"] {
-      padding: 10px; border: 1px solid #ccc; border-radius: 4px; flex: 1 1 180px;
+    :root{
+      --bg:#f3f6fb; --card:#ffffff; --text:#111827; --muted:#6b7280;
+      --primary:#0b68ff; --primary-700:#0852c8; --border:#e5e7eb;
+      --success:#10b981; --danger:#ef4444;
     }
-    label.checkbox { display: flex; align-items: center; gap: 6px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
-    button { padding: 10px 14px; border: 0; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background: #007bff; color: #fff; }
-    tr:nth-child(even) { background: #f7f7f7; }
-    .actions button { margin-right: 6px; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    h1{font-weight:800;letter-spacing:.5px;text-align:center;margin:32px 16px}
+    .container{max-width:1100px;margin:0 auto 48px;background:var(--card);
+      border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:28px}
+    .section-title{font-size:28px;font-weight:800;margin:0 0 14px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .field{display:flex;align-items:center;background:#fff;border:1px solid var(--border);
+      border-radius:10px;padding:10px 12px}
+    .field input[type="text"], .field input[type="number"], .field input[type="datetime-local"], .field select{
+      width:100%;border:0;outline:0;font-size:14px;background:transparent;color:var(--text)
+    }
+    .checkbox{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);
+      border-radius:10px;padding:10px 12px}
+    textarea{width:100%;min-height:84px;resize:vertical;border:1px solid var(--border);
+      border-radius:12px;padding:12px;font-size:14px;color:var(--text);background:#fff}
+    .actions-right{display:flex;justify-content:flex-end;align-items:center}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:0;border-radius:999px;
+      font-weight:600;cursor:pointer;transition:.15s ease;user-select:none}
+    .btn.primary{background:var(--primary);color:#fff}
+    .btn.primary:hover{background:var(--primary-700)}
+    .btn.ghost{background:#eef4ff;color:var(--primary)}
+    .btn.ghost:hover{background:#e3ecff}
+    .btn.danger{background:var(--danger);color:#fff}
+
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:18px;overflow:hidden;border-radius:12px}
+    thead th{background:var(--primary);color:#fff;text-align:left;padding:12px 14px;font-weight:700}
+    tbody td{background:#fff;border-bottom:1px solid var(--border);padding:12px 14px;vertical-align:top}
+    tbody tr:nth-child(even) td{background:#fbfdff}
+    .col-actions{white-space:nowrap}
+    .remarks-cell{white-space:normal;word-wrap:break-word;max-width:380px}
+    .muted{color:var(--muted);font-size:12px}
+
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#eef4ff;color:#0b68ff;
+      border:1px solid #dbe7ff;padding:6px 10px;border-radius:999px;font-size:13px}
+    .chip button{border:0;background:transparent;color:#0b68ff;cursor:pointer;font-weight:700;padding:0 4px}
+
+    .modal.hidden{display:none}
+    .modal{position:fixed;inset:0;z-index:60}
+    .modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+    .modal__dialog{position:relative; z-index:61; width:min(720px, 92vw); margin:6vh auto; background:#fff; border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;}
+    .modal__header,.modal__footer{padding:14px 18px; border-bottom:1px solid var(--border)}
+    .modal__footer{border-top:1px solid var(--border); border-bottom:none; display:flex; justify-content:flex-end; gap:8px}
+    .modal__body{padding:16px 18px}
+    .modal__close{border:0;background:transparent;font-size:24px;cursor:pointer;line-height:1}
+
+    @media (max-width:900px){.grid{grid-template-columns:repeat(6,1fr)} .remarks-cell{max-width:100%}}
+    @media (max-width:640px){.grid{grid-template-columns:repeat(4,1fr)} .btn{padding:9px 12px}}
   </style>
 </head>
 <body>
 
-<h1>MICU CRUD System - Patient Records</h1>
+  <h1>MICU CRUD System - Patient Records</h1>
 
-<section>
-  <h2>OUTPUT</h2>
+  <div class="container">
+    <h2 class="section-title">OUTPUT</h2>
 
-  <form id="record-form">
-    <input type="datetime-local" id="timeStamp" />
-    <input type="number" id="urineMl"         placeholder="Urine (mL)" />
-    <input type="number" id="ngtResidualsMl"  placeholder="NGT Residuals (mL)" />
-    <input type="number" id="vomitusMl"       placeholder="Vomitus (mL)" />
-    <label class="checkbox" title="Stool present">
-      <input type="checkbox" id="stool" /> Stool
-    </label>
-    <input type="text"   id="others"          placeholder="Others" />
-    <button type="submit">Add Record</button>
-  </form>
+    <form id="record-form" autocomplete="off">
+      <div class="grid">
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="timeStamp" aria-label="Time stamp"/>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="urineMl" placeholder="Urine (mL)"/>
+        </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Time Stamp</th>
-        <th>Urine (mL)</th>
-        <th>NGT Residuals (mL)</th>
-        <th>Vomitus (mL)</th>
-        <th>Stool</th>
-        <th>Others</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="record-list"></tbody>
-  </table>
-</section>
+        <!-- NGT Residuals + remarks -->
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="ngtResidualsMl" placeholder="NGT Residuals (mL)"/>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="ngtRemarks" placeholder="NGT remarks (e.g., re-fed / discarded)"/>
+        </div>
+
+        <!-- Vomitus + remarks -->
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="vomitusMl" placeholder="Vomitus (mL)"/>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="vomitusRemarks" placeholder="Vomitus remarks (color/character)"/>
+        </div>
+
+        <!-- Stool + form + optional volume -->
+        <label class="checkbox" style="grid-column:span 2">
+          <input type="checkbox" id="stool"/><span>Stool</span>
+        </label>
+        <div class="field" style="grid-column:span 3">
+          <select id="stoolForm">
+            <option value="">Stool form (optional)</option>
+            <option>Formed</option>
+            <option>Loose</option>
+            <option>Watery</option>
+            <option>Soft</option>
+            <option>Hard</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="stoolVolumeMl" placeholder="Stool volume (mL, optional)"/>
+        </div>
+
+        <!-- Others: Name + mL + Add -->
+        <div style="grid-column:span 8; display:flex; gap:10px; align-items:flex-start;">
+          <div class="field" style="flex:2">
+            <input type="text" id="othersName" placeholder="Others name (e.g., 'Drain')" />
+          </div>
+          <div class="field" style="flex:1; max-width:150px">
+            <input type="number" id="othersAmount" placeholder="mL" />
+          </div>
+          <button type="button" class="btn ghost" id="othersAddBtn">Add</button>
+        </div>
+
+        <!-- Preset chips -->
+        <div id="othersPresets" style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <!-- Chips for what will be saved this submit -->
+        <div id="othersChips" style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks / Notes</div>
+          <textarea id="remarks" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add Record</button>
+        </div>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Time Stamp</th>
+          <th>Urine (mL)</th>
+          <th>NGT Residuals (mL)</th>
+          <th>Vomitus (mL)</th>
+          <th>Stool</th>
+          <th>Others</th>
+          <th>Total (row)</th>
+          <th>Remarks</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="record-list"></tbody>
+    </table>
+
+    <div id="totalsBox" class="muted" style="margin-top:10px">
+      <strong>Totals:</strong>
+      <span id="totRunning">Running: 0 mL</span> •
+      <span id="totDay">Day shift: 0 mL</span> •
+      <span id="totNight">Night shift: 0 mL</span>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!-- OTHERS (ECG/CBG/Insulin) -->
+  <div class="container" id="othersSection">
+    <h2 class="section-title">OTHERS</h2>
+
+    <form id="others-form" autocomplete="off">
+      <div class="grid">
+        <!-- ECG -->
+        <div class="muted" style="grid-column:span 12">ECG</div>
+        <div class="field" style="grid-column:span 5">
+          <select id="ecgCode"></select>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="ecgOtherText" placeholder="If 'Other', specify…" disabled />
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="datetime-local" id="ecgTime" placeholder="ECG time (optional)" />
+        </div>
+
+        <!-- CBG -->
+        <div class="muted" style="grid-column:span 12;margin-top:6px">CBG</div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="cbgMgdl" placeholder="CBG (mg/dL)" />
+        </div>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsFasting"/> <span>Fasting</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsRandom"/> <span>Random</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsPreFeed"/> <span>Pre-feed</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsPostFeed"/> <span>Post-feed</span></label>
+        <div class="field" style="grid-column:span 3">
+          <input type="datetime-local" id="cbgTime" placeholder="CBG time (optional)" />
+        </div>
+
+        <!-- Insulin -->
+        <div class="muted" style="grid-column:span 12;margin-top:6px">Insulin</div>
+        <div class="field" style="grid-column:span 4">
+          <select id="insulinTypeCode"></select>
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="insulinDoseUnits" placeholder="Dose (Units)" />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <select id="insulinRoute">
+            <option value="">Route (optional)</option>
+            <option value="SC">SC</option>
+            <option value="IV">IV</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="insulinTimeGiven" placeholder="Time given (optional)" />
+        </div>
+
+        <!-- Single overall remarks -->
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks (optional)</div>
+          <textarea id="remarksOthers" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add Others Record</button>
+        </div>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ECG</th>
+          <th>ECG Time</th>
+          <th>CBG (mg/dL)</th>
+          <th>CBG Time</th>
+          <th>Insulin (Type/Dose/Route)</th>
+          <th>Insulin Time</th>
+          <th>Remarks</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="others-list"></tbody>
+    </table>
+  </div>
+  <!-- ========================================= -->
+
+  <!-- === Edit Modal (OUTPUT) === -->
+  <div id="editModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="modal__header">
+        <h3 id="editTitle">Edit Output</h3>
+        <button class="modal__close" title="Close" data-close>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="editForm" class="grid" autocomplete="off">
+          <input type="hidden" id="edit_id"/>
+
+          <div class="field" style="grid-column:span 6">
+            <input type="datetime-local" id="edit_timeStamp" />
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_urineMl" placeholder="Urine (mL)"/>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_ngtResidualsMl" placeholder="NGT (mL)"/>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_vomitusMl" placeholder="Vomitus (mL)"/>
+          </div>
+
+          <label class="checkbox" style="grid-column:span 3">
+            <input type="checkbox" id="edit_stool"/>
+            <span>Stool present</span>
+          </label>
+
+          <div class="field" style="grid-column:span 3">
+            <select id="edit_stoolForm">
+              <option value="">Stool form (optional)</option>
+              <option>Formed</option><option>Loose</option><option>Watery</option><option>Soft</option><option>Hard</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:span 3">
+            <input type="number" id="edit_stoolVolumeMl" placeholder="Stool volume (mL)"/>
+          </div>
+
+          <div class="field" style="grid-column:span 6">
+            <input type="text" id="edit_ngtRemarks" placeholder="NGT remarks"/>
+          </div>
+          <div class="field" style="grid-column:span 6">
+            <input type="text" id="edit_vomitusRemarks" placeholder="Vomitus remarks"/>
+          </div>
+
+          <div class="field" style="grid-column:span 12">
+            <input type="text" id="edit_others" placeholder="Others (free text; use ; to separate)"/>
+          </div>
+
+          <div style="grid-column:span 12">
+            <textarea id="edit_remarks" placeholder="Remarks / Notes"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close>Cancel</button>
+        <button class="btn primary" id="editSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- === Edit Modal (OTHERS) === -->
+  <div id="othersEditModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close-others></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="othersEditTitle">
+      <div class="modal__header">
+        <h3 id="othersEditTitle">Edit Others</h3>
+        <button class="modal__close" title="Close" data-close-others>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="othersEditForm" class="grid" autocomplete="off">
+          <input type="hidden" id="o_edit_id"/>
+
+          <div class="field" style="grid-column:span 5">
+            <select id="o_edit_ecgCode"></select>
+          </div>
+          <div class="field" style="grid-column:span 4">
+            <input type="text" id="o_edit_ecgOtherText" placeholder="If 'Other', specify…" disabled />
+          </div>
+          <div class="field" style="grid-column:span 3">
+            <input type="datetime-local" id="o_edit_ecgTime" />
+          </div>
+
+          <div class="field" style="grid-column:span 3">
+            <input type="number" id="o_edit_cbgMgdl" placeholder="CBG (mg/dL)" />
+          </div>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsFasting"/> <span>Fasting</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsRandom"/> <span>Random</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsPreFeed"/> <span>Pre-feed</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsPostFeed"/> <span>Post-feed</span></label>
+          <div class="field" style="grid-column:span 3">
+            <input type="datetime-local" id="o_edit_cbgTime" />
+          </div>
+
+          <div class="field" style="grid-column:span 4">
+            <select id="o_edit_insulinTypeCode"></select>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="o_edit_insulinDoseUnits" placeholder="Dose (Units)" />
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <select id="o_edit_insulinRoute">
+              <option value="">Route</option>
+              <option value="SC">SC</option>
+              <option value="IV">IV</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:span 4">
+            <input type="datetime-local" id="o_edit_insulinTimeGiven" />
+          </div>
+
+          <!-- single overall remarks -->
+          <div style="grid-column:span 12">
+            <textarea id="o_edit_remarks" placeholder="Remarks (optional)…"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close-others>Cancel</button>
+        <button class="btn primary" id="othersEditSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
 
 <script>
-  const API = '/outputs'; // same-origin; if different host, use full URL and ensure CORS
+  // if you have a context path like /api, set API_BASE = '/api'
+  const API_BASE = '';
+  const API  = `${API_BASE}/outputs`;
+  const O_API = `${API_BASE}/others`;
 
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
   const fmtDateTime = (v) => {
     if (!v) return '';
-    // display as local yyyy-MM-dd HH:mm
     const d = new Date(v);
     if (isNaN(d)) return v;
-    const pad = (n) => String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
+  const toIntOrNull = v => (v === '' || v == null) ? null : parseInt(v,10);
+  function openModal(m){ m.classList.remove('hidden'); m.setAttribute('aria-hidden','false'); }
+  function closeModal(m){ m.classList.add('hidden');  m.setAttribute('aria-hidden','true'); }
+  function toLocalDT(val){
+    if(!val) return '';
+    const d = new Date(val);
+    if(isNaN(d)) return '';
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
-  const toIntOrNull = (v) => v === '' || v == null ? null : parseInt(v, 10);
+  // ---------- OTHERS: presets + chips (OUTPUT form) ----------
+  let othersItems = []; // e.g., ["Drain 20 mL", "Oral rinse 10 mL"]
+  const presetsKey = 'micu_others_presets_v1';
+  function loadPresets(){ try { const raw = localStorage.getItem(presetsKey); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+  function savePresets(list){ try { localStorage.setItem(presetsKey, JSON.stringify(list)); } catch {} }
+  function upsertPreset(name){
+    let n = name.trim(); if (!n) return;
+    let list = loadPresets();
+    if (!list.includes(n)) { list.unshift(n); if (list.length > 12) list = list.slice(0, 12); savePresets(list); }
+  }
+  function renderOthersPresets(){
+    const wrap = $('othersPresets'); if (!wrap) return;
+    wrap.innerHTML = '';
+    loadPresets().forEach(n=>{
+      const chip = document.createElement('span');
+      chip.className = 'chip'; chip.style.cursor='pointer';
+      chip.title = 'Click to use this name'; chip.textContent = n;
+      chip.onclick = ()=>{ const i = $('othersName'); if(i){ i.value=n; i.focus(); } };
+      wrap.appendChild(chip);
+    });
+  }
+  function renderOthersChips(){
+    const wrap = $('othersChips'); if (!wrap) return;
+    wrap.innerHTML = '';
+    othersItems.forEach((txt, idx) => {
+      const chip = document.createElement('span'); chip.className='chip';
+      const label = document.createElement('span'); label.textContent = txt;
+      const x = document.createElement('button'); x.type='button'; x.textContent='×';
+      x.setAttribute('aria-label','Remove');
+      x.onclick = () => { othersItems.splice(idx,1); renderOthersChips(); };
+      chip.appendChild(label); chip.appendChild(x); wrap.appendChild(chip);
+    });
+  }
 
-  async function fetchRecords() {
-    const tbody = document.getElementById('record-list');
+  document.addEventListener('DOMContentLoaded', () => {
+    const addBtn = $('othersAddBtn');
+    const nameEl = $('othersName');
+    const amtEl  = $('othersAmount');
+
+    renderOthersPresets();
+    renderOthersChips();
+
+    const addOthers = () => {
+      const name = (nameEl?.value || '').trim();
+      const amt  = (amtEl?.value || '').trim();
+      if (!name) return;
+      const piece = amt ? `${name} ${amt} mL` : name;
+      othersItems.push(piece);
+      upsertPreset(name);
+      nameEl.value = ''; amtEl.value = '';
+      renderOthersChips(); renderOthersPresets();
+    };
+    addBtn?.addEventListener('click', addOthers);
+    nameEl?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addOthers(); }});
+    amtEl?.addEventListener('keydown',  e=>{ if(e.key==='Enter'){ e.preventDefault(); addOthers(); }});
+  });
+
+  // ---------- Totals helpers ----------
+  function sumOthersMl(txt){
+    if(!txt) return 0;
+    const re = /(\d+(?:\.\d+)?)\s*mL/gi; let m, s = 0;
+    while((m = re.exec(txt))){ s += parseFloat(m[1]); }
+    return Math.round(s);
+  }
+  function rowTotal(item){
+    return (item.urineMl||0)
+         + (item.ngtResidualsMl||0)
+         + (item.vomitusMl||0)
+         + (item.stoolVolumeMl||0)
+         + sumOthersMl(item.others||'');
+  }
+  function computeTotals(items){
+    let running=0, day=0, night=0;
+    items.forEach(it=>{
+      const t = rowTotal(it);
+      running += t;
+      const d = it.timeStamp ? new Date(it.timeStamp) : null;
+      if(d && !isNaN(d)){
+        const h = d.getHours();
+        if(h >= 7 && h < 19) day += t; else night += t;
+      }
+    });
+    $('totRunning').textContent = `Running: ${running} mL`;
+    $('totDay').textContent     = `Day shift: ${day} mL`;
+    $('totNight').textContent   = `Night shift: ${night} mL`;
+  }
+
+  // ---------- CRUD (OUTPUT list, add, delete) ----------
+  async function fetchRecords(){
+    const tbody = $('record-list');
     tbody.innerHTML = '';
-    try {
+    try{
       const res = await fetch(API);
-      if (!res.ok) throw new Error(await res.text());
+      if(!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      data.forEach(item => {
-        const tr = document.createElement('tr');
 
-        const cells = [
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const edited = item.updatedAt ? fmtDateTime(item.updatedAt) : 'never';
+        tr.title = `Last edited: ${edited}`;
+
+        const stoolCell = item.stool
+          ? ['Yes', item.stoolForm || '', item.stoolVolumeMl!=null?`${item.stoolVolumeMl} mL`:'' ].filter(Boolean).join(' · ')
+          : 'No';
+
+        const cols = [
           item.id,
           fmtDateTime(item.timeStamp),
           item.urineMl ?? '',
           item.ngtResidualsMl ?? '',
           item.vomitusMl ?? '',
-          item.stool ? 'Yes' : 'No',
-          item.others ?? ''
+          stoolCell,
+          item.others ?? '',
+          rowTotal(item) + ' mL'
         ];
-        cells.forEach(val => {
+        // build cells and attach tooltips for ngt/vomit remarks
+        cols.forEach((val, idx)=>{
           const td = document.createElement('td');
           td.textContent = val;
+          if (idx===3 && item.ngtRemarks) td.title = item.ngtRemarks;
+          if (idx===4 && item.vomitusRemarks) td.title = item.vomitusRemarks;
           tr.appendChild(td);
         });
 
-        // Actions
-        const actionsTd = document.createElement('td');
-        actionsTd.className = 'actions';
+        const tdRemarks = document.createElement('td');
+        tdRemarks.className='remarks-cell';
+        tdRemarks.textContent = item.remarks ?? '';
+        if(item.remarks) tdRemarks.title = item.remarks;
+        tr.appendChild(tdRemarks);
 
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Edit';
-        editBtn.onclick = async () => {
-          // simple prompts; in production, use a proper form/modal
-          const timeStamp = prompt('Time Stamp (YYYY-MM-DDTHH:mm:ss) or blank to keep', item.timeStamp ? item.timeStamp.replace('.000','') : '');
-          const urineMl = prompt('Urine mL', item.urineMl ?? '');
-          const ngtResidualsMl = prompt('NGT Residuals mL', item.ngtResidualsMl ?? '');
-          const vomitusMl = prompt('Vomitus mL', item.vomitusMl ?? '');
-          const stool = confirm('Is stool present? Click OK for Yes, Cancel for No.');
-          const others = prompt('Others', item.others ?? '');
+        const tdAct = document.createElement('td'); tdAct.className='col-actions';
+        const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent='Edit';
+        editBtn.onclick = () => editRecord(item);
+        const delBtn = document.createElement('button'); delBtn.className='btn danger'; delBtn.style.marginLeft='6px'; delBtn.textContent='Delete';
+        delBtn.onclick = () => deleteRecord(item.id);
+        tdAct.appendChild(editBtn); tdAct.appendChild(delBtn); tr.appendChild(tdAct);
 
-          const body = {
-            timeStamp: timeStamp ? timeStamp : item.timeStamp, // keep old if blank
-            urineMl: toIntOrNull(urineMl),
-            ngtResidualsMl: toIntOrNull(ngtResidualsMl),
-            vomitusMl: toIntOrNull(vomitusMl),
-            stool,
-            others: others || null
-          };
-
-          const res = await fetch(`${API}/${item.id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-          });
-          if (!res.ok) alert('Update failed: ' + res.status + ' ' + await res.text());
-          await fetchRecords();
-        };
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.onclick = async () => {
-          if (!confirm('Delete this record?')) return;
-          const res = await fetch(`${API}/${item.id}`, { method: 'DELETE' });
-          if (!res.ok) alert('Delete failed: ' + res.status + ' ' + await res.text());
-          await fetchRecords();
-        };
-
-        actionsTd.appendChild(editBtn);
-        actionsTd.appendChild(delBtn);
-        tr.appendChild(actionsTd);
         tbody.appendChild(tr);
       });
-    } catch (err) {
-      console.error('Fetch failed:', err);
-      alert('Load failed: ' + err.message);
+
+      computeTotals(data);
+    }catch(err){
+      console.error(err);
+      alert('Load failed: '+err.message);
     }
   }
 
-  document.getElementById('record-form').addEventListener('submit', async (e) => {
+  async function deleteRecord(id){
+    if(!confirm('Delete this record?')) return;
+    const r = await fetch(`${API}/${id}`, {method:'DELETE'});
+    if(!r.ok) return alert('Delete failed: '+r.status+' '+await r.text());
+    fetchRecords();
+  }
+
+  // ---------- Edit (OUTPUT Modal) ----------
+  async function editRecord(item){
+    $('edit_id').value = item.id;
+    $('edit_timeStamp').value    = toLocalDT(item.timeStamp);
+    $('edit_urineMl').value      = item.urineMl ?? '';
+    $('edit_ngtResidualsMl').value = item.ngtResidualsMl ?? '';
+    $('edit_vomitusMl').value    = item.vomitusMl ?? '';
+    $('edit_stool').checked      = !!item.stool;
+    $('edit_stoolForm').value    = item.stoolForm || '';
+    $('edit_stoolVolumeMl').value= item.stoolVolumeMl ?? '';
+    $('edit_ngtRemarks').value   = item.ngtRemarks || '';
+    $('edit_vomitusRemarks').value = item.vomitusRemarks || '';
+    $('edit_others').value       = item.others ?? '';
+    $('edit_remarks').value      = item.remarks ?? '';
+    openModal($('editModal'));
+  }
+
+  $('editSaveBtn').addEventListener('click', async (e)=>{
     e.preventDefault();
-    // Convert datetime-local to ISO with seconds
-    const tsRaw = document.getElementById('timeStamp').value; // e.g. "2025-10-14T19:45"
+    const id = Number($('edit_id').value);
+    let ts = $('edit_timeStamp').value;
+    if (ts && !/:..$/.test(ts)) ts += ':00';
+
     const body = {
-      timeStamp: tsRaw ? tsRaw + ':00' : null, // backend auto-fills if null
-      urineMl:         toIntOrNull(document.getElementById('urineMl').value),
-      ngtResidualsMl:  toIntOrNull(document.getElementById('ngtResidualsMl').value),
-      vomitusMl:       toIntOrNull(document.getElementById('vomitusMl').value),
-      stool:           document.getElementById('stool').checked,
-      others:          document.getElementById('others').value || null
+      timeStamp: ts || null,
+      urineMl:         toIntOrNull($('edit_urineMl').value),
+      ngtResidualsMl:  toIntOrNull($('edit_ngtResidualsMl').value),
+      vomitusMl:       toIntOrNull($('edit_vomitusMl').value),
+      stool:           $('edit_stool').checked,
+      stoolForm:       $('edit_stoolForm').value || null,
+      stoolVolumeMl:   toIntOrNull($('edit_stoolVolumeMl').value),
+      ngtRemarks:      $('edit_ngtRemarks').value || null,
+      vomitusRemarks:  $('edit_vomitusRemarks').value || null,
+      others:          $('edit_others').value || null,
+      remarks:         $('edit_remarks').value || null
     };
 
-    try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) throw new Error(await res.text());
-      e.target.reset();
-      await fetchRecords();
-    } catch (err) {
-      console.error('Create failed:', err);
-      alert('Add failed: ' + err.message);
-    }
+    const r = await fetch(`${API}/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){ alert('Update failed: '+r.status+' '+await r.text()); return; }
+
+    closeModal($('editModal'));
+    fetchRecords();
+  });
+
+  document.querySelectorAll('#editModal [data-close]').forEach(el=>{
+    el.addEventListener('click', ()=> closeModal($('editModal')));
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape' && !$('editModal').classList.contains('hidden')) closeModal($('editModal'));
+  });
+
+  // ---------- Add (OUTPUT) ----------
+  document.getElementById('record-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    let tsRaw = $('timeStamp').value;
+    if (tsRaw && tsRaw.includes('T') && !/:\d{2}$/.test(tsRaw)) tsRaw += ':00';
+
+    const body = {
+      timeStamp: tsRaw || null,
+      urineMl:         toIntOrNull($('urineMl').value),
+      ngtResidualsMl:  toIntOrNull($('ngtResidualsMl').value),
+      vomitusMl:       toIntOrNull($('vomitusMl').value),
+      stool:           $('stool').checked,
+      stoolForm:       $('stoolForm').value || null,
+      stoolVolumeMl:   toIntOrNull($('stoolVolumeMl').value),
+      ngtRemarks:      $('ngtRemarks').value || null,
+      vomitusRemarks:  $('vomitusRemarks').value || null,
+      others:          (othersItems.join('; ') || null),
+      remarks:         $('remarks').value || null
+    };
+
+    const r = await fetch(API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) return alert('Add failed: '+r.status+' '+await r.text());
+
+    e.target.reset();
+    othersItems = []; renderOthersChips(); fetchRecords();
   });
 
   fetchRecords();
 </script>
+
+<!-- ========================================= -->
+<!-- NEW SCRIPT for OTHERS section -->
+<script>
+  // ECG and Insulin dropdowns
+  const ECG_OPTIONS = [
+    [0,'— ECG (optional) —'],[1,'Normal Sinus Rhythm (NSR)'],[2,'Sinus Tachycardia'],[3,'Sinus Bradycardia'],
+    [4,'Atrial Fibrillation'],[5,'Atrial Flutter'],[6,'Supraventricular Tachycardia (SVT)'],
+    [7,'Premature Ventricular Contractions (PVCs)'],[8,'Ventricular Tachycardia (VT)'],[9,'Ventricular Fibrillation (VF)'],
+    [10,'Asystole'],[11,'Heart Block – First Degree'],[12,'Heart Block – Second Degree (Mobitz I / Mobitz II)'],
+    [13,'Heart Block – Third Degree'],[14,'Paced Rhythm'],[15,'Other (Specify)']
+  ];
+  const INSULIN_TYPES = [[0,'— Insulin type (optional) —'],[1,'Isophane (NPH)'],[2,'Regular (Human)'],[3,'Glargine'],[4,'70/30 mix'],[5,'Other']];
+
+  function o_fillSelect(sel, options){
+    sel.innerHTML = '';
+    for (const [val,label] of options){
+      const opt = document.createElement('option'); opt.value = val || ''; opt.textContent = label; sel.appendChild(opt);
+    }
+  }
+  function o_enableIfOther(codeSel, txtEl){
+    const code = parseInt(codeSel.value||'0', 10);
+    const isOther = code === 15; txtEl.disabled = !isOther; if (!isOther) txtEl.value = '';
+  }
+  function o_toIso(val){ if(!val) return null; return val.length === 16 ? val + ':00' : val; }
+  function o_openModal(m){ m.classList.remove('hidden'); m.setAttribute('aria-hidden','false'); }
+  function o_closeModal(m){ m.classList.add('hidden');  m.setAttribute('aria-hidden','true'); }
+
+  async function o_fetchOthers(){
+    const tbody = document.getElementById('others-list');
+    tbody.innerHTML = '';
+    try{
+      const res = await fetch(O_API);
+      if(!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const edited = item.updatedAt ? fmtDateTime(item.updatedAt) : 'never';
+        tr.title = `Last edited: ${edited}`;
+
+        const ecg = item.ecgLabel || '';
+        const ecgTime = item.ecgTime ? fmtDateTime(item.ecgTime) : '';
+        const cbg = item.cbgMgdl ?? '';
+        const cbgTime = item.cbgTime ? fmtDateTime(item.cbgTime) : '';
+        const insulin = [item.insulinTypeLabel || '', item.insulinDoseUnits != null ? `${item.insulinDoseUnits} U` : '', item.insulinRoute || '']
+                          .filter(Boolean).join(' / ');
+        const insulinTime = item.insulinTimeGiven ? fmtDateTime(item.insulinTimeGiven) : '';
+
+        const cols = [ item.id, ecg, ecgTime, cbg, cbgTime, insulin, insulinTime, item.remarks || '' ];
+        cols.forEach(val=>{ const td = document.createElement('td'); td.textContent = val; tr.appendChild(td); });
+
+        const tdAct = document.createElement('td'); tdAct.className='col-actions';
+        const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent='Edit';
+        editBtn.onclick = () => o_openEdit(item);
+        const delBtn = document.createElement('button'); delBtn.className='btn danger'; delBtn.style.marginLeft='6px'; delBtn.textContent='Delete';
+        delBtn.onclick = () => o_delete(item.id);
+        tdAct.appendChild(editBtn); tdAct.appendChild(delBtn); tr.appendChild(tdAct);
+
+        tbody.appendChild(tr);
+      });
+    }catch(err){ console.error(err); alert('Load (Others) failed: '+err.message); }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    o_fillSelect(document.getElementById('ecgCode'), ECG_OPTIONS);
+    o_fillSelect(document.getElementById('insulinTypeCode'), INSULIN_TYPES);
+    o_fillSelect(document.getElementById('o_edit_ecgCode'), ECG_OPTIONS);
+    o_fillSelect(document.getElementById('o_edit_insulinTypeCode'), INSULIN_TYPES);
+
+    const ecgCode = document.getElementById('ecgCode');
+    const ecgOtherText = document.getElementById('ecgOtherText');
+    ecgCode.addEventListener('change', () => o_enableIfOther(ecgCode, ecgOtherText));
+
+    const o_ecgCode = document.getElementById('o_edit_ecgCode');
+    const o_ecgOtherText = document.getElementById('o_edit_ecgOtherText');
+    o_ecgCode.addEventListener('change', () => o_enableIfOther(o_ecgCode, o_ecgOtherText));
+
+    document.querySelectorAll('[data-close-others]').forEach(el=>{
+      el.addEventListener('click', ()=> o_closeModal(document.getElementById('othersEditModal')));
+    });
+
+    o_fetchOthers();
+    document.getElementById('others-form').addEventListener('submit', o_createOthers);
+    document.getElementById('othersEditSaveBtn').addEventListener('click', o_saveOthersEdit);
+  });
+
+  async function o_createOthers(e){
+    e.preventDefault();
+    const body = {
+      ecgCode:       parseInt(document.getElementById('ecgCode').value||'0',10) || null,
+      ecgOtherText:  document.getElementById('ecgOtherText').value || null,
+      ecgTime:       o_toIso(document.getElementById('ecgTime').value),
+      cbgMgdl:       toIntOrNull(document.getElementById('cbgMgdl').value),
+      cbgIsFasting:  document.getElementById('cbgIsFasting').checked || null,
+      cbgIsRandom:   document.getElementById('cbgIsRandom').checked || null,
+      cbgIsPreFeed:  document.getElementById('cbgIsPreFeed').checked || null,
+      cbgIsPostFeed: document.getElementById('cbgIsPostFeed').checked || null,
+      cbgTime:       o_toIso(document.getElementById('cbgTime').value),
+      insulinTypeCode:  parseInt(document.getElementById('insulinTypeCode').value||'0',10) || null,
+      insulinDoseUnits: toIntOrNull(document.getElementById('insulinDoseUnits').value),
+      insulinRoute:     document.getElementById('insulinRoute').value || null,
+      insulinTimeGiven: o_toIso(document.getElementById('insulinTimeGiven').value),
+      remarks: document.getElementById('remarksOthers').value || null
+    };
+    if (body.ecgCode !== 15) body.ecgOtherText = null;
+
+    const r = await fetch(O_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!r.ok){ alert('Add (Others) failed: '+r.status+' '+await r.text()); return; }
+
+    e.target.reset(); document.getElementById('ecgOtherText').disabled = true; o_fetchOthers();
+  }
+
+  function o_setSelValue(sel, val){ sel.value = (val ?? '') + ''; if (![...sel.options].some(o=>o.value === sel.value)) sel.value = ''; }
+
+  function o_openEdit(item){
+    document.getElementById('o_edit_id').value = item.id;
+    o_setSelValue(document.getElementById('o_edit_ecgCode'), item.ecgCode);
+    document.getElementById('o_edit_ecgOtherText').value = item.ecgOtherText || '';
+    o_enableIfOther(document.getElementById('o_edit_ecgCode'), document.getElementById('o_edit_ecgOtherText'));
+    document.getElementById('o_edit_ecgTime').value = toLocalDT(item.ecgTime || '') || '';
+
+    document.getElementById('o_edit_cbgMgdl').value = item.cbgMgdl ?? '';
+    document.getElementById('o_edit_cbgIsFasting').checked  = !!item.cbgIsFasting;
+    document.getElementById('o_edit_cbgIsRandom').checked   = !!item.cbgIsRandom;
+    document.getElementById('o_edit_cbgIsPreFeed').checked  = !!item.cbgIsPreFeed;
+    document.getElementById('o_edit_cbgIsPostFeed').checked = !!item.cbgIsPostFeed;
+    document.getElementById('o_edit_cbgTime').value = toLocalDT(item.cbgTime || '') || '';
+
+    o_setSelValue(document.getElementById('o_edit_insulinTypeCode'), item.insulinTypeCode);
+    document.getElementById('o_edit_insulinDoseUnits').value = item.insulinDoseUnits ?? '';
+    o_setSelValue(document.getElementById('o_edit_insulinRoute'), item.insulinRoute || '');
+    document.getElementById('o_edit_insulinTimeGiven').value = toLocalDT(item.insulinTimeGiven || '') || '';
+
+    document.getElementById('o_edit_remarks').value = item.remarks || '';
+    o_openModal(document.getElementById('othersEditModal'));
+  }
+
+  async function o_saveOthersEdit(e){
+    e.preventDefault();
+    const id = Number(document.getElementById('o_edit_id').value);
+    const body = {
+      ecgCode:       parseInt(document.getElementById('o_edit_ecgCode').value||'0',10) || null,
+      ecgOtherText:  document.getElementById('o_edit_ecgOtherText').value || null,
+      ecgTime:       o_toIso(document.getElementById('o_edit_ecgTime').value),
+      cbgMgdl:       toIntOrNull(document.getElementById('o_edit_cbgMgdl').value),
+      cbgIsFasting:  document.getElementById('o_edit_cbgIsFasting').checked || null,
+      cbgIsRandom:   document.getElementById('o_edit_cbgIsRandom').checked || null,
+      cbgIsPreFeed:  document.getElementById('o_edit_cbgIsPreFeed').checked || null,
+      cbgIsPostFeed: document.getElementById('o_edit_cbgIsPostFeed').checked || null,
+      cbgTime:       o_toIso(document.getElementById('o_edit_cbgTime').value),
+      insulinTypeCode:  parseInt(document.getElementById('o_edit_insulinTypeCode').value||'0',10) || null,
+      insulinDoseUnits: toIntOrNull(document.getElementById('o_edit_insulinDoseUnits').value),
+      insulinRoute:     document.getElementById('o_edit_insulinRoute').value || null,
+      insulinTimeGiven: o_toIso(document.getElementById('o_edit_insulinTimeGiven').value),
+      remarks: document.getElementById('o_edit_remarks').value || null
+    };
+    if (body.ecgCode !== 15) body.ecgOtherText = null;
+
+    const r = await fetch(`${O_API}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!r.ok){ alert('Update (Others) failed: '+r.status+' '+await r.text()); return; }
+    o_closeModal(document.getElementById('othersEditModal')); o_fetchOthers();
+  }
+
+  async function o_delete(id){
+    if(!confirm('Delete this record?')) return;
+    const r = await fetch(`${O_API}/${id}`, {method:'DELETE'});
+    if(!r.ok){ alert('Delete (Others) failed: '+r.status+' '+await r.text()); return; }
+    o_fetchOthers();
+  }
+</script>
+<!-- ========================================= -->
 
 </body>
 </html>

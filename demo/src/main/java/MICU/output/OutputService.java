@@ -38,6 +38,12 @@ public class OutputService {
         e.setVomitusMl(body.getVomitusMl());
         e.setStool(body.getStool());            // <- single boolean now
         e.setOthers(body.getOthers());
+        e.setRemarks(body.getRemarks());
+
+        e.setNgtRemarks(body.getNgtRemarks());
+        e.setVomitusRemarks(body.getVomitusRemarks());
+        e.setStoolForm(body.getStoolForm());
+        e.setStoolVolumeMl(body.getStoolVolumeMl());
 
         return repo.saveAndFlush(e);
     }
