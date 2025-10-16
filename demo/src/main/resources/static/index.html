@@ -163,6 +163,72 @@
       <span id="totNight">Night shift: 0 mL</span>
     </div>
   </div>
+  <!-- ========================================= -->
+  <!-- MECHANICAL VENTILATION -->
+  <div class="container" id="mechventSection">
+    <h2 class="section-title">MECHANICAL VENTILATION</h2>
+
+    <form id="mechvent-form" autocomplete="off">
+      <div class="grid">
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="mv_recordedAt" aria-label="Time stamp"/>
+        </div>
+
+        <label class="checkbox" style="grid-column:span 2">
+          <input type="checkbox" id="mv_intubated"/><span>Intubated</span>
+        </label>
+
+        <div class="field" style="grid-column:span 3">
+          <select id="mv_mode">
+            <option value="AC_VC">AC/VC</option>
+            <option value="AC_PC">AC/PC</option>
+            <option value="SIMV_VC">SIMV/VC</option>
+            <option value="SIMV_PC">SIMV/PC</option>
+            <option value="PSV">PSV</option>
+            <option value="CPAP">CPAP</option>
+            <option value="BIPAP">BiPAP</option>
+            <option value="SPONTANEOUS">Spontaneous</option>
+            <option value="OTHER">Other…</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="text" id="mv_mode_other" placeholder="If Other, specify…" style="display:none"/>
+        </div>
+
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_fio2" min="1" max="100" placeholder="FiO₂ (%)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_tvMl" min="0" placeholder="Tidal Volume (mL)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_burBpm" min="0" placeholder="Backup Rate (bpm)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_psCmh2o" min="0" placeholder="PS (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_p1Cmh2o" min="0" placeholder="P1 (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_t1Seconds" min="0" step="0.01" placeholder="T1 (s)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_ifrLpm" min="0" step="0.01" placeholder="IFR (L/min)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="text"   id="mv_ieRatio" placeholder="I:E (e.g., 1:2)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_peepCmh2o" min="0" placeholder="PEEP (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_triggerSens" min="0" step="0.01" placeholder="Trigger Sens."/></div>
+
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks / Notes (optional)</div>
+          <textarea id="mv_remarks" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add MechVent Record</button>
+        </div>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Timestamp</th><th>Intubated</th><th>Mode</th><th>FiO₂</th>
+          <th>TV</th><th>BUR</th><th>PS</th><th>P1</th><th>T1</th><th>IFR</th>
+          <th>I:E</th><th>PEEP</th><th>Trigger</th><th>Remarks</th><th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="mechvent-list"></tbody>
+    </table>
+  </div>
+
 
   <!-- ========================================= -->
   <!-- OTHERS (ECG/CBG/Insulin) -->
@@ -641,6 +707,134 @@
   });
 
   fetchRecords();
+</script>
+
+<script>
+  // Backend route mirrors Output/Others style
+  const MV_API_BASE = '';
+  const MV_API = `${MV_API_BASE}/mechvent`;         // no context path
+
+  // Show/hide "Other" text box
+  (function bindModeOther(){
+    const sel = document.getElementById('mv_mode');
+    const other = document.getElementById('mv_mode_other');
+    if (!sel) return;
+    const toggle = () => {
+      const show = sel.value === 'OTHER';
+      other.style.display = show ? 'block' : 'none';
+      if (!show) other.value = '';
+    };
+    sel.addEventListener('change', toggle);
+    toggle();
+  })();
+
+  function mvToIso(val){ if(!val) return null; return val.length === 16 ? val + ':00' : val; }
+  const mvNum = id => { const v = document.getElementById(id).value; return v === '' ? null : Number(v); };
+  const mvVal = id => { const v = document.getElementById(id).value?.trim(); return v === '' ? null : v; };
+
+  // Load table
+  async function mvFetch(){
+    const tbody = document.getElementById('mechvent-list');
+    tbody.innerHTML = '';
+    try{
+      const r = await fetch(MV_API);
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json(); // List<MechVent>
+
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.id ?? ''}</td>
+          <td>${fmtDateTime(item.recordedAt) || ''}</td>
+          <td>${item.intubated ? 'Yes' : 'No'}</td>
+          <td>${item.mvMode}${item.mvMode==='OTHER' && item.mvModeOther ? ' ('+item.mvModeOther+')' : ''}</td>
+          <td>${item.fio2 ?? ''}</td>
+          <td>${item.tvMl ?? ''}</td>
+          <td>${item.burBpm ?? ''}</td>
+          <td>${item.psCmh2o ?? ''}</td>
+          <td>${item.p1Cmh2o ?? ''}</td>
+          <td>${item.t1Seconds ?? ''}</td>
+          <td>${item.ifrLpm ?? ''}</td>
+          <td>${item.ieRatio ?? ''}</td>
+          <td>${item.peepCmh2o ?? ''}</td>
+          <td>${item.triggerSens ?? ''}</td>
+          <td class="remarks-cell">${item.remarks ?? ''}</td>
+          <td class="col-actions">
+            <button class="btn danger" data-del="${item.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // bind deletes
+      tbody.querySelectorAll('button[data-del]').forEach(btn=>{
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-del');
+          if(!confirm('Delete this MechVent record?')) return;
+          const resp = await fetch(`${MV_API}/${id}`, { method:'DELETE' });
+          if(!resp.ok){ alert('Delete failed: ' + resp.status + ' ' + await resp.text()); return; }
+          mvFetch();
+        });
+      });
+    }catch(err){
+      console.error('MechVent load failed:', err);
+      alert('Load (MechVent) failed: ' + err.message);
+    }
+  }
+
+  // Create
+  document.getElementById('mechvent-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+
+    const mode = document.getElementById('mv_mode').value;
+    const modeOther = mvVal('mv_mode_other');
+    if (mode === 'OTHER' && !modeOther) {
+      alert("Please specify MV Mode when 'Other' is selected.");
+      return;
+    }
+    const ie = mvVal('mv_ieRatio');
+    if (ie && !/^[0-9]+(\.[0-9]+)?:[0-9]+(\.[0-9]+)?$/.test(ie)) {
+      alert("I:E must be like '1:2' or '1:1.5'.");
+      return;
+    }
+
+    const body = {
+      recordedAt: mvToIso(document.getElementById('mv_recordedAt').value),
+      intubated: document.getElementById('mv_intubated').checked,
+      mvMode: mode,                      // maps to enum on the backend
+      mvModeOther: mode === 'OTHER' ? modeOther : null,
+      fio2: mvNum('mv_fio2'),
+      tvMl: mvNum('mv_tvMl'),
+      burBpm: mvNum('mv_burBpm'),
+      psCmh2o: mvNum('mv_psCmh2o'),
+      p1Cmh2o: mvNum('mv_p1Cmh2o'),
+      t1Seconds: mvNum('mv_t1Seconds'),
+      ifrLpm: mvNum('mv_ifrLpm'),
+      ieRatio: ie,
+      peepCmh2o: mvNum('mv_peepCmh2o'),
+      triggerSens: mvNum('mv_triggerSens'),
+      remarks: mvVal('mv_remarks')
+    };
+
+    const r = await fetch(MV_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){
+      const t = await r.text();
+      alert('Add (MechVent) failed: ' + r.status + ' ' + t);
+      return;
+    }
+
+    e.target.reset();
+    document.getElementById('mv_mode').value = 'AC_VC';
+    document.getElementById('mv_mode_other').style.display = 'none';
+    mvFetch();
+  });
+
+  // initial load
+  mvFetch();
 </script>
 
 <!-- ========================================= -->

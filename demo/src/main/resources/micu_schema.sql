@@ -56,4 +56,66 @@ BEFORE UPDATE ON public.others
 FOR EACH ROW
 EXECUTE FUNCTION trg_others_set_updated_at();
 
+-- Table: public.mechvent
+CREATE TABLE IF NOT EXISTS public.mechvent (
+  id               INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  recorded_at      TIMESTAMP NOT NULL DEFAULT NOW(), -- hourly logs
+
+  intubated        BOOLEAN NOT NULL,
+  mv_mode          VARCHAR(20) NOT NULL,
+  mv_mode_other    VARCHAR(80),
+
+  fio2             INTEGER,           -- 21..100 (%)
+  tv_ml            INTEGER,           -- tidal volume (mL)
+  bur_bpm          INTEGER,           -- backup rate (breaths/min)
+  ps_cmh2o         INTEGER,
+  p1_cmh2o         INTEGER,
+  t1_seconds       NUMERIC(4,2),
+  ifr_lpm          NUMERIC(5,2),
+  ie_ratio         VARCHAR(10),
+  peep_cmh2o       INTEGER,
+  trigger_sens     NUMERIC(4,2),
+
+  remarks          TEXT,
+  created_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMP
+);
+
+ALTER TABLE public.mechvent
+  ADD CONSTRAINT mechvent_mv_mode_chk
+  CHECK (mv_mode IN ('AC_VC','AC_PC','SIMV_VC','SIMV_PC','PSV','CPAP','BIPAP','SPONTANEOUS','OTHER'));
+
+ALTER TABLE public.mechvent
+  ADD CONSTRAINT mechvent_other_requires_text
+  CHECK (mv_mode <> 'OTHER' OR (mv_mode_other IS NOT NULL AND length(trim(mv_mode_other)) > 0));
+
+ALTER TABLE public.mechvent
+  ADD CONSTRAINT mechvent_nonneg
+  CHECK (
+    COALESCE(fio2,21) BETWEEN 1 AND 100 AND
+    COALESCE(tv_ml,0) >= 0 AND
+    COALESCE(bur_bpm,0) >= 0 AND
+    COALESCE(ps_cmh2o,0) >= 0 AND
+    COALESCE(p1_cmh2o,0) >= 0 AND
+    COALESCE(t1_seconds,0) >= 0 AND
+    COALESCE(ifr_lpm,0) >= 0 AND
+    COALESCE(peep_cmh2o,0) >= 0 AND
+    COALESCE(trigger_sens,0) >= 0
+  );
+
+CREATE OR REPLACE FUNCTION trg_mechvent_set_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END; $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_updated_at_mechvent ON public.mechvent;
+CREATE TRIGGER set_updated_at_mechvent
+BEFORE UPDATE ON public.mechvent
+FOR EACH ROW
+EXECUTE FUNCTION trg_mechvent_set_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_mechvent_time ON public.mechvent (recorded_at DESC);
+
 
