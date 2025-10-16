@@ -58,6 +58,196 @@
   </table>
 </section>
 
+<section>
+  <h2>VITAL SIGNS</h2>
+  <form id="vitals-form">
+    <input type="number" id="temperature" step="0.1" placeholder="Temperature (°C)" required />
+    <input type="number" id="bpSystolic" placeholder="BP Systolic (mmHg)" required />
+    <input type="number" id="bpDiastolic" placeholder="BP Diastolic (mmHg)" required />
+    <input type="number" id="heartRate" placeholder="Heart Rate (bpm)" required />
+    <input type="number" id="respiratoryRate" placeholder="Respiratory Rate (breaths/min)" required />
+    <button type="submit">Add Vitals</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Time Stamp</th>
+        <th>Temperature (°C)</th>
+        <th>BP (mmHg)</th>
+        <th>Heart Rate</th>
+        <th>Resp. Rate</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="vitals-list"></tbody>
+  </table>
+</section>
+
+<section>
+<h2>Neuro Assessment</h2>
+<table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th colspan="2">Neuro Assessment</th>
+  </tr>
+
+  <!-- GCS -->
+  <tr>
+    <td>GCS (EVM)</td>
+    <td>
+      Eye:
+      <select name="gcs_eye">
+        <option>1</option><option>2</option><option>3</option><option>4</option>
+      </select>
+      &nbsp; Voice:
+      <select name="gcs_voice">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      </select>
+      &nbsp; Motor:
+      <select name="gcs_motor">
+        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+    </td>
+  </tr>
+
+  <!-- Pupil Size -->
+  <tr>
+    <td>Pupil Size (R/L)</td>
+    <td>
+      Right:
+      <select name="pupil_size_r">
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+      &nbsp;&nbsp;
+      Left:
+      <select name="pupil_size_l">
+        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+    </td>
+  </tr>
+
+  <!-- Pupil Reaction -->
+  <tr>
+    <td>Pupil Reaction</td>
+    <td style="line-height: 1.8;">
+      Right:
+      <label><input type="checkbox" name="pupil_react_r" value="brisk"> Brisk</label>
+      <label><input type="checkbox" name="pupil_react_r" value="sluggish"> Sluggish</label>
+      <label><input type="checkbox" name="pupil_react_r" value="non-reactive"> Non-reactive</label>
+      <br>
+      Left:
+      <label><input type="checkbox" name="pupil_react_l" value="brisk"> Brisk</label>
+      <label><input type="checkbox" name="pupil_react_l" value="sluggish"> Sluggish</label>
+      <label><input type="checkbox" name="pupil_react_l" value="non-reactive"> Non-reactive</label>
+    </td>
+  </tr>
+
+  <!-- Motors -->
+  <tr>
+    <td>Motors (R/L)</td>
+    <td>
+      <div style="display:flex; gap:15px;">
+        <div>
+          Upper Right:
+          <select name="motor_ur">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div>
+          Upper Left:
+          <select name="motor_ul">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 5px; display:flex; gap:15px;">
+        <div>
+          Lower Right:
+          <select name="motor_lr">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div>
+          Lower Left:
+          <select name="motor_ll">
+            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+      </div>
+    </td>
+  </tr>
+
+  <!-- Sensory -->
+  <tr>
+    <td>Sensory (R/L)</td>
+    <td>
+      <div style="display:flex; gap:15px;">
+        <div>
+          Upper Right:
+          <select name="sensory_ur">
+            <option>0</option><option>1</option><option>2</option>
+          </select>
+        </div>
+        <div>
+          Upper Left:
+          <select name="sensory_ul">
+            <option>0</option><option>1</option><option>2</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 5px; display:flex; gap:15px;">
+        <div>
+          Lower Right:
+          <select name="sensory_lr">
+            <option>0</option><option>1</option><option>2</option>
+          </select>
+        </div>
+        <div>
+          Lower Left:
+          <select name="sensory_ll">
+            <option>0</option><option>1</option><option>2</option>
+          </select>
+        </div>
+      </div>
+    </td>
+  </tr>
+
+  <!-- Sedation Score -->
+  <tr>
+    <td>Sedation Score</td>
+    <td>
+      <select name="sedation_score">
+        <option>+4</option><option>+3</option><option>+2</option><option>+1</option>
+        <option>0</option><option>-1</option><option>-2</option><option>-3</option><option>-4</option>
+      </select>
+    </td>
+  </tr>
+
+  <!-- Analgesia -->
+  <tr>
+    <td>Analgesia Score</td>
+    <td>
+      <label><input type="checkbox" name="analgesia" value="NRS"> NRS</label>
+      <label><input type="checkbox" name="analgesia" value="CPOT"> CPOT</label>
+      <label><input type="checkbox" name="analgesia" value="BPS"> BPS</label>
+      <label><input type="checkbox" name="analgesia" value="FACES"> FACES</label>
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="2" style="text-align:center;">
+      <button type="button" style="background:#007bff; color:white; padding:6px 16px; border:none; border-radius:5px;" onclick="saveNeuroAssessment()">
+        💾 Save Neuro Data
+      </button>
+    </td>
+  </tr>
+</table>
+
+<h3>Saved Neuro Assessment:</h3>
+<div id="savedNeuroData" style="border:1px solid #aaa; padding:10px; background:#fafafa;"></div>
+</section>
+
 <script>
   const API = '/outputs'; // same-origin; if different host, use full URL and ensure CORS
 
@@ -179,7 +369,136 @@
   });
 
   fetchRecords();
+
+
+  // ========================
+// Vital Signs Logic
+// ========================
+const API_VITALS = '/vitals';
+
+async function fetchVitals() {
+  const tbody = document.getElementById('vitals-list');
+  tbody.innerHTML = '';
+  try {
+    const res = await fetch(API_VITALS);
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    data.forEach(item => {
+      const tr = document.createElement('tr');
+      const cells = [
+        item.id,
+        fmtDateTime(item.timeStamp),
+        item.temperature ?? '',
+        `${item.bpSystolic ?? ''}/${item.bpDiastolic ?? ''}`,
+        item.heartRate ?? '',
+        item.respiratoryRate ?? ''
+      ];
+      cells.forEach(val => {
+        const td = document.createElement('td');
+        td.textContent = val;
+        tr.appendChild(td);
+      });
+
+      const actionsTd = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = async () => {
+        if (!confirm('Delete this record?')) return;
+        const res = await fetch(`${API_VITALS}/${item.id}`, { method: 'DELETE' });
+        if (!res.ok) alert('Delete failed: ' + res.status + ' ' + await res.text());
+        await fetchVitals();
+      };
+      actionsTd.appendChild(delBtn);
+      tr.appendChild(actionsTd);
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Vitals fetch failed:', err);
+  }
+}
+
+document.getElementById('vitals-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {
+    temperature: parseFloat(document.getElementById('temperature').value),
+    bpSystolic: parseInt(document.getElementById('bpSystolic').value),
+    bpDiastolic: parseInt(document.getElementById('bpDiastolic').value),
+    heartRate: parseInt(document.getElementById('heartRate').value),
+    respiratoryRate: parseInt(document.getElementById('respiratoryRate').value)
+  };
+  try {
+    const res = await fetch(API_VITALS, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    e.target.reset();
+    await fetchVitals();
+  } catch (err) {
+    console.error('Add vitals failed:', err);
+    alert('Add failed: ' + err.message);
+  }
+});
+
+fetchVitals();
+
+function saveNeuroAssessment() {
+  const data = {
+    gcsEye: document.querySelector("[name='gcs_eye']").value,
+    gcsVoice: document.querySelector("[name='gcs_voice']").value,
+    gcsMotor: document.querySelector("[name='gcs_motor']").value,
+    pupilSizeR: document.querySelector("[name='pupil_size_r']").value,
+    pupilSizeL: document.querySelector("[name='pupil_size_l']").value,
+    pupilReactR: getCheckedValues("pupil_react_r"),
+    pupilReactL: getCheckedValues("pupil_react_l"),
+    motorUR: document.querySelector("[name='motor_ur']").value,
+    motorUL: document.querySelector("[name='motor_ul']").value,
+    motorLR: document.querySelector("[name='motor_lr']").value,
+    motorLL: document.querySelector("[name='motor_ll']").value,
+    sensoryUR: document.querySelector("[name='sensory_ur']").value,
+    sensoryUL: document.querySelector("[name='sensory_ul']").value,
+    sensoryLR: document.querySelector("[name='sensory_lr']").value,
+    sensoryLL: document.querySelector("[name='sensory_ll']").value,
+    sedationScore: document.querySelector("[name='sedation_score']").value,
+    analgesiaScore: getCheckedValues("analgesia")
+  };
+
+  fetch("http://localhost:8080/api/neuro/save", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(res => {
+    alert("✅ Neuro assessment saved successfully!");
+    displaySavedData(res);
+  })
+  .catch(err => alert("❌ Error saving data: " + err));
+}
+
+function getCheckedValues(name) {
+  return Array.from(document.querySelectorAll(`input[name='${name}']:checked`))
+              .map(el => el.value)
+              .join(", ");
+}
+
+function displaySavedData(data) {
+  const div = document.getElementById("savedNeuroData");
+  div.innerHTML = `
+    <strong>GCS:</strong> E${data.gcsEye} V${data.gcsVoice} M${data.gcsMotor}<br>
+    <strong>Pupil Size:</strong> R=${data.pupilSizeR}mm, L=${data.pupilSizeL}mm<br>
+    <strong>Pupil Reaction:</strong> R=${data.pupilReactR}, L=${data.pupilReactL}<br>
+    <strong>Motors:</strong> UR=${data.motorUR}, UL=${data.motorUL}, LR=${data.motorLR}, LL=${data.motorLL}<br>
+    <strong>Sensory:</strong> UR=${data.sensoryUR}, UL=${data.sensoryUL}, LR=${data.sensoryLR}, LL=${data.sensoryLL}<br>
+    <strong>Sedation Score:</strong> ${data.sedationScore}<br>
+    <strong>Analgesia Score:</strong> ${data.analgesiaScore}
+  `;
+}
 </script>
+
+<button type="button" onclick="saveNeuroAssessment()">Save Neuro Data</button>
 
 </body>
 </html>
