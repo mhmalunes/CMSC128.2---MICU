@@ -24,7 +24,7 @@ public class Output {
     @Column(name = "vomitus_ml")
     private Integer vomitusMl;
 
-    @Column(name = "stool")            // tickbox
+    @Column(name = "stool_present")            // tickbox
     private Boolean stool;
 
     @Column(columnDefinition = "text")
