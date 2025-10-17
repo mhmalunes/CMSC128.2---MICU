@@ -5,135 +5,467 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MICU CRUD System - Patient Records</title>
   <style>
-    :root{
-      --bg:#f3f6fb; --card:#ffffff; --text:#111827; --muted:#6b7280;
-      --primary:#0b68ff; --primary-700:#0852c8; --border:#e5e7eb;
-      --success:#10b981; --danger:#ef4444;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    h1{font-weight:800;letter-spacing:.5px;text-align:center;margin:32px 16px}
-    .container{max-width:1100px;margin:0 auto 48px;background:var(--card);
-      border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:28px}
-    .section-title{font-size:28px;font-weight:800;margin:0 0 14px}
-    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-    .field{display:flex;align-items:center;background:#fff;border:1px solid var(--border);
-      border-radius:10px;padding:10px 12px}
-    .field input[type="text"], .field input[type="number"], .field input[type="datetime-local"], .field select{
-      width:100%;border:0;outline:0;font-size:14px;background:transparent;color:var(--text)
-    }
-    .checkbox{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);
-      border-radius:10px;padding:10px 12px}
-    textarea{width:100%;min-height:84px;resize:vertical;border:1px solid var(--border);
-      border-radius:12px;padding:12px;font-size:14px;color:var(--text);background:#fff}
-    .actions-right{display:flex;justify-content:flex-end;align-items:center}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:0;border-radius:999px;
-      font-weight:600;cursor:pointer;transition:.15s ease;user-select:none}
-    .btn.primary{background:var(--primary);color:#fff}
-    .btn.primary:hover{background:var(--primary-700)}
-    .btn.ghost{background:#eef4ff;color:var(--primary)}
-    .btn.ghost:hover{background:#e3ecff}
-    .btn.danger{background:var(--danger);color:#fff}
-
-    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:18px;overflow:hidden;border-radius:12px}
-    thead th{background:var(--primary);color:#fff;text-align:left;padding:12px 14px;font-weight:700}
-    tbody td{background:#fff;border-bottom:1px solid var(--border);padding:12px 14px;vertical-align:top}
-    tbody tr:nth-child(even) td{background:#fbfdff}
-    .col-actions{white-space:nowrap}
-    .remarks-cell{white-space:normal;word-wrap:break-word;max-width:380px}
-    .muted{color:var(--muted);font-size:12px}
-
-    .chip{display:inline-flex;align-items:center;gap:6px;background:#eef4ff;color:#0b68ff;
-      border:1px solid #dbe7ff;padding:6px 10px;border-radius:999px;font-size:13px}
-    .chip button{border:0;background:transparent;color:#0b68ff;cursor:pointer;font-weight:700;padding:0 4px}
-
-    .modal.hidden{display:none}
-    .modal{position:fixed;inset:0;z-index:60}
-    .modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
-    .modal__dialog{position:relative; z-index:61; width:min(720px, 92vw); margin:6vh auto; background:#fff; border-radius:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;}
-    .modal__header,.modal__footer{padding:14px 18px; border-bottom:1px solid var(--border)}
-    .modal__footer{border-top:1px solid var(--border); border-bottom:none; display:flex; justify-content:flex-end; gap:8px}
-    .modal__body{padding:16px 18px}
-    .modal__close{border:0;background:transparent;font-size:24px;cursor:pointer;line-height:1}
-
-    @media (max-width:900px){.grid{grid-template-columns:repeat(6,1fr)} .remarks-cell{max-width:100%}}
-    @media (max-width:640px){.grid{grid-template-columns:repeat(4,1fr)} .btn{padding:9px 12px}}
-        .scroll-container {
-      width: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
-      border-radius: 10px;
-      background: white;
-    }
-
-    /* Optional: match look across sections */
-    .scroll-container::-webkit-scrollbar {
-      height: 8px;
-    }
-
-    .scroll-container::-webkit-scrollbar-thumb {
-      background-color: #ccc;
-      border-radius: 4px;
-    }
-
-    .scroll-container::-webkit-scrollbar-thumb:hover {
-      background-color: #999;
-    }
-    /* One-piece accordion card (title + content share the same box) */
-  .accordion-item{
-    max-width:1100px;
-    margin:0 auto 15px;
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.06);
-    overflow:hidden;                /* keeps rounded corners when panel opens */
+      :root {
+    --bg: #f9f9f9;
+    --card: #ffffff;
+    --text: #1e1e1e;
+    --muted: #6b7280;
+    --primary: #7b1113;      /* Maroon */
+    --primary-700: #5f0d0f;  /* Darker maroon (hover) */
+    --accent: #fce1e1;       /* Light pink section bg */
+    --border: #e5e7eb;
+    --success: #10b981;
+    --danger: #ef4444;
   }
 
-  /* Header becomes the top of the same card */
-  .accordion-item .accordion-trigger{
-    width:100%;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:16px 20px;
-    background:transparent;         /* same card */
-    color:var(--text);
-    border:0;                       /* no separate border */
-    border-radius:0;
-    font-weight:800; font-size:20px;
-    cursor:pointer;
-  }
-  .accordion-item .accordion-trigger:hover{ background:#f8fafc; }
-  .accordion-item .accordion-trigger:focus-visible{ outline:2px solid var(--primary); outline-offset:-2px; }
+  * { box-sizing: border-box; }
 
-  .accordion-item .chev{
-    width:22px; height:22px; stroke: currentColor; stroke-width:2; fill:none;
-    transform: rotate(0deg); transition: transform .2s ease;
-  }
-  .accordion-item .accordion-trigger[aria-expanded="true"] .chev{ transform: rotate(180deg); }
-
-  /* Panel is the bottom of the same card */
-  .accordion-item .accordion-panel{
-    overflow:hidden;
-    max-height:0;
-    padding:0 20px;                 /* horizontal padding of the card */
-    transition:max-height .25s ease, padding-top .2s ease, padding-bottom .2s ease;
-  }
-  .accordion-item .accordion-panel.is-open{
-    padding-top:12px;               /* when open, add vertical padding */
-    padding-bottom:16px;
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial;
   }
 
-  /* Remove the extra inner container spacing for this accordion only */
-  #outputAccordion .container{ 
-    box-shadow:none; border:0; border-radius:0; padding:0; margin:0; 
-    background:transparent;
+  h1 {
+    font-weight: 800;
+    letter-spacing: .5px;
+    text-align: center;
+    margin: 32px 16px;
   }
+
+  /* ---------- ACCORDION ---------- */
+  .accordion-item {
+    max-width: 1100px;
+    margin: 0 auto 20px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+  }
+
+  .accordion-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 18px 22px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s ease;
+  }
+
+  .accordion-trigger:hover {
+    background: var(--primary-700);
+  }
+
+  .accordion-item .chev {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+    transform: rotate(0deg);
+    transition: transform .2s ease;
+  }
+
+  .accordion-trigger[aria-expanded="true"] .chev {
+    transform: rotate(180deg);
+  }
+    /* ---------- SECTION TITLE (Bubble Font Style) ---------- */
+  .accordion-trigger span {
+    font-family: "Poppins", "Baloo 2", "Nunito", "Inter", sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-transform: uppercase;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.25);
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 16px;
+    border-radius: 999px;
+    display: inline-block;
+    line-height: 1.2;
+  }
+
+  .accordion-panel {
+    overflow: hidden;
+    background: var(--accent);
+    transition: max-height .25s ease, padding-top .2s ease, padding-bottom .2s ease;
+    max-height: 0;
+    padding: 0 22px;
+  }
+
+  .accordion-panel.is-open {
+    padding-top: 18px;
+    padding-bottom: 22px;
+  }
+
+  /* ---------- GRID & FIELDS ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.03);
+  }
+
+  .field input[type="text"],
+  .field input[type="number"],
+  .field input[type="datetime-local"],
+  .field select {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    font-size: 14px;
+    background: transparent;
+    color: var(--text);
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+    border-radius: 8px;
+  }
+
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 84px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+  }
+
+  textarea:focus {
+    outline: 2px solid var(--primary);
+  }
+
+  /* ---------- BUTTONS ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+    user-select: none;
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn.primary {
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .btn.primary:hover {
+    background: var(--primary-700);
+  }
+
+  .btn.ghost {
+    background: #f9dede;
+    color: var(--primary);
+  }
+
+  .btn.ghost:hover {
+    background: #f5c7c7;
+  }
+
+  .btn.danger {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* ---------- TABLES ---------- */
+  .scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-radius: 10px;
+    background: white;
+    margin-top: 10px;
+  }
+
+  .scroll-container::-webkit-scrollbar {
+    height: 8px;
+  }
+  .scroll-container::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+  }
+  .scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: #999;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  thead th {
+    background: var(--primary);
+    color: #fff;
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 700;
+  }
+
+  tbody td {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+    vertical-align: top;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #fff8f8;
+  }
+
+  .col-actions {
+    white-space: nowrap;
+  }
+
+  .remarks-cell {
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 380px;
+  }
+
+  .muted {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* ---------- CHIPS ---------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fde8e8;
+    color: var(--primary);
+    border: 1px solid #f5c7c7;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .chip button {
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0 4px;
+  }
+
+  /* ---------- MODALS ---------- */
+  .modal.hidden { display: none; }
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+  }
+  .modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+  }
+  .modal__dialog {
+    position: relative;
+    z-index: 61;
+    width: min(720px, 92vw);
+    margin: 6vh auto;
+    background: var(--accent);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    display: flex;
+    flex-direction: column;
+  }
+  .modal__header,
+  .modal__footer {
+    padding: 14px 18px;
+    background: var(--primary);
+    color: #fff;
+  }
+  .modal__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .modal__body {
+    padding: 16px 18px;
+  }
+  .modal__close {
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+    /* --- Fix: rounded popup edges like Figma --- */
+  .modal__dialog {
+    border-radius: 20px;                      /* round outer edges */
+    overflow: hidden;                         /* ensures header/footer follow curve */
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);  /* soft popup shadow */
+  }
+
+  /* keep header/footer flush with curved corners */
+  .modal__header {
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+  }
+
+  .modal__footer {
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+  }
+
+  /* optional: soft contrast around modal body */
+  .modal__body {
+    background: var(--accent);
+    border-radius: 0 0 20px 20px;
+  }
+
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: repeat(6, 1fr); }
+    .remarks-cell { max-width: 100%; }
+  }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: repeat(4, 1fr); }
+    .btn { padding: 9px 12px; }
+  }
+    /* FIX: white gap between header and first row */
+.scroll-container table {
+  border-collapse: collapse;          /* merge edges to remove white gap */
+  border: none;
+}
+
+.scroll-container thead th {
+  border-bottom: 2px solid var(--primary-700); /* subtle divider under header */
+}
+
+.scroll-container tbody td:first-child {
+  border-left: 1px solid var(--border);
+}
+
+.scroll-container table tr:first-child td {
+  border-top: none !important;       /* prevent thin white top border */
+}
+
+.scroll-container {
+  background: var(--accent);
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+.scroll-container table thead th:first-child {
+  border-top-left-radius: 14px;
+}
+.scroll-container table thead th:last-child {
+  border-top-right-radius: 14px;
+}
+
   </style>
 </head>
 <body>
 
   <h1>MICU CRUD System - Patient Records</h1>
+  <!-- ===== VITAL SIGNS (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="vitalsAccordion">
+  <button
+    id="vitals-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="vitals-panel"
+  >
+    <span>VITAL SIGNS</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
+
+  <div id="vitals-panel" class="accordion-panel" role="region" aria-labelledby="vitals-trigger" hidden>
+    <form id="vitals-form" autocomplete="off" style="margin-top:10px;">
+      <div class="grid">
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="temperature" step="0.1" placeholder="Temperature (°C)" required />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="bpSystolic" placeholder="BP Systolic (mmHg)" required />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="bpDiastolic" placeholder="BP Diastolic (mmHg)" required />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="heartRate" placeholder="Heart Rate (bpm)" required />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="respiratoryRate" placeholder="Resp. Rate (breaths/min)" required />
+        </div>
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add Vitals</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="scroll-container">
+      <table id="vitals-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Time Stamp</th>
+            <th>Temperature (°C)</th>
+            <th>BP (mmHg)</th>
+            <th>Heart Rate</th>
+            <th>Resp. Rate</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="vitals-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
  <!-- ===== OUTPUT (Accordion - single joined card) ===== -->
 <div class="accordion-item" id="outputAccordion">
@@ -415,6 +747,52 @@
     </table>
   </div>
 </div>
+    <!-- === Edit Modal (VITAL SIGNS) === -->
+  <div id="vitalsEditModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close-vitals></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="vitalsEditTitle">
+      <div class="modal__header">
+        <h3 id="vitalsEditTitle">Edit Vital Signs</h3>
+        <button class="modal__close" title="Close" data-close-vitals>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="vitalsEditForm" class="grid" autocomplete="off">
+          <input type="hidden" id="v_edit_id" />
+
+          <div class="field" style="grid-column:span 4">
+            <input type="datetime-local" id="v_edit_timeStamp" aria-label="Timestamp" />
+          </div>
+
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="v_edit_temperature" step="0.1" placeholder="Temperature (°C)" />
+          </div>
+
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="v_edit_bpSystolic" placeholder="BP Systolic (mmHg)" />
+          </div>
+
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="v_edit_bpDiastolic" placeholder="BP Diastolic (mmHg)" />
+          </div>
+
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="v_edit_heartRate" placeholder="Heart Rate (bpm)" />
+          </div>
+
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="v_edit_respiratoryRate" placeholder="Resp. Rate (breaths/min)" />
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close-vitals>Cancel</button>
+        <button class="btn primary" id="vitalsEditSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
 
   <!-- === Edit Modal (OUTPUT) === -->
   <div id="editModal" class="modal hidden" aria-hidden="true">
@@ -608,195 +986,126 @@
     </div>
   </div>
 
-<section>
-  <h2>VITAL SIGNS</h2>
-  <form id="vitals-form">
-    <input type="number" id="temperature" step="0.1" placeholder="Temperature (°C)" required />
-    <input type="number" id="bpSystolic" placeholder="BP Systolic (mmHg)" required />
-    <input type="number" id="bpDiastolic" placeholder="BP Diastolic (mmHg)" required />
-    <input type="number" id="heartRate" placeholder="Heart Rate (bpm)" required />
-    <input type="number" id="respiratoryRate" placeholder="Respiratory Rate (breaths/min)" required />
-    <button type="submit">Add Vitals</button>
-  </form>
+<!-- ===== NEURO ASSESSMENT (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="neuroAccordion">
+  <button
+    id="neuro-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="neuro-panel"
+  >
+    <span>NEURO ASSESSMENT</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Time Stamp</th>
-        <th>Temperature (°C)</th>
-        <th>BP (mmHg)</th>
-        <th>Heart Rate</th>
-        <th>Resp. Rate</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="vitals-list"></tbody>
-  </table>
-</section>
+  <div id="neuro-panel" class="accordion-panel" role="region" aria-labelledby="neuro-trigger" hidden>
+    <form id="neuro-form" autocomplete="off" style="margin-top:10px;">
+      <table border="1" cellpadding="5" style="border-collapse:collapse;width:100%;">
+        <tr><th colspan="2">Neuro Assessment</th></tr>
 
-<section>
-<h2>Neuro Assessment</h2>
-<table border="1" cellpadding="5" style="border-collapse: collapse; width: 100%;">
-  <tr>
-    <th colspan="2">Neuro Assessment</th>
-  </tr>
+        <tr>
+          <td>GCS (EVM)</td>
+          <td>
+            Eye:
+            <select name="gcs_eye">
+              <option>1</option><option>2</option><option>3</option><option>4</option>
+            </select>
+            Voice:
+            <select name="gcs_voice">
+              <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+            </select>
+            Motor:
+            <select name="gcs_motor">
+              <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+            </select>
+          </td>
+        </tr>
 
-  <!-- GCS -->
-  <tr>
-    <td>GCS (EVM)</td>
-    <td>
-      Eye:
-      <select name="gcs_eye">
-        <option>1</option><option>2</option><option>3</option><option>4</option>
-      </select>
-      &nbsp; Voice:
-      <select name="gcs_voice">
-        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-      </select>
-      &nbsp; Motor:
-      <select name="gcs_motor">
-        <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-      </select>
-    </td>
-  </tr>
+        <tr>
+          <td>Pupil Size (R/L)</td>
+          <td>
+            R: <select name="pupil_size_r"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+            L: <select name="pupil_size_l"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+          </td>
+        </tr>
 
-  <!-- Pupil Size -->
-  <tr>
-    <td>Pupil Size (R/L)</td>
-    <td>
-      Right:
-      <select name="pupil_size_r">
-        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-      </select>
-      &nbsp;&nbsp;
-      Left:
-      <select name="pupil_size_l">
-        <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-      </select>
-    </td>
-  </tr>
+        <tr>
+          <td>Pupil Reaction</td>
+          <td style="line-height:1.8;">
+            R:
+            <label><input type="checkbox" name="pupil_react_r" value="brisk"> Brisk</label>
+            <label><input type="checkbox" name="pupil_react_r" value="sluggish"> Sluggish</label>
+            <label><input type="checkbox" name="pupil_react_r" value="non-reactive"> Non-reactive</label>
+            <br>
+            L:
+            <label><input type="checkbox" name="pupil_react_l" value="brisk"> Brisk</label>
+            <label><input type="checkbox" name="pupil_react_l" value="sluggish"> Sluggish</label>
+            <label><input type="checkbox" name="pupil_react_l" value="non-reactive"> Non-reactive</label>
+          </td>
+        </tr>
 
-  <!-- Pupil Reaction -->
-  <tr>
-    <td>Pupil Reaction</td>
-    <td style="line-height: 1.8;">
-      Right:
-      <label><input type="checkbox" name="pupil_react_r" value="brisk"> Brisk</label>
-      <label><input type="checkbox" name="pupil_react_r" value="sluggish"> Sluggish</label>
-      <label><input type="checkbox" name="pupil_react_r" value="non-reactive"> Non-reactive</label>
-      <br>
-      Left:
-      <label><input type="checkbox" name="pupil_react_l" value="brisk"> Brisk</label>
-      <label><input type="checkbox" name="pupil_react_l" value="sluggish"> Sluggish</label>
-      <label><input type="checkbox" name="pupil_react_l" value="non-reactive"> Non-reactive</label>
-    </td>
-  </tr>
+        <tr>
+          <td>Motors (R/L)</td>
+          <td>
+            <div style="display:flex;gap:15px;">
+              <div>UR: <select name="motor_ur"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+              <div>UL: <select name="motor_ul"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+            </div>
+            <div style="margin-top:5px;display:flex;gap:15px;">
+              <div>LR: <select name="motor_lr"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+              <div>LL: <select name="motor_ll"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+            </div>
+          </td>
+        </tr>
 
-  <!-- Motors -->
-  <tr>
-    <td>Motors (R/L)</td>
-    <td>
-      <div style="display:flex; gap:15px;">
-        <div>
-          Upper Right:
-          <select name="motor_ur">
-            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-          </select>
-        </div>
-        <div>
-          Upper Left:
-          <select name="motor_ul">
-            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top: 5px; display:flex; gap:15px;">
-        <div>
-          Lower Right:
-          <select name="motor_lr">
-            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-          </select>
-        </div>
-        <div>
-          Lower Left:
-          <select name="motor_ll">
-            <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-          </select>
-        </div>
-      </div>
-    </td>
-  </tr>
+        <tr>
+          <td>Sensory (R/L)</td>
+          <td>
+            <div style="display:flex;gap:15px;">
+              <div>UR: <select name="sensory_ur"><option>0</option><option>1</option><option>2</option></select></div>
+              <div>UL: <select name="sensory_ul"><option>0</option><option>1</option><option>2</option></select></div>
+            </div>
+            <div style="margin-top:5px;display:flex;gap:15px;">
+              <div>LR: <select name="sensory_lr"><option>0</option><option>1</option><option>2</option></select></div>
+              <div>LL: <select name="sensory_ll"><option>0</option><option>1</option><option>2</option></select></div>
+            </div>
+          </td>
+        </tr>
 
-  <!-- Sensory -->
-  <tr>
-    <td>Sensory (R/L)</td>
-    <td>
-      <div style="display:flex; gap:15px;">
-        <div>
-          Upper Right:
-          <select name="sensory_ur">
-            <option>0</option><option>1</option><option>2</option>
-          </select>
-        </div>
-        <div>
-          Upper Left:
-          <select name="sensory_ul">
-            <option>0</option><option>1</option><option>2</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-top: 5px; display:flex; gap:15px;">
-        <div>
-          Lower Right:
-          <select name="sensory_lr">
-            <option>0</option><option>1</option><option>2</option>
-          </select>
-        </div>
-        <div>
-          Lower Left:
-          <select name="sensory_ll">
-            <option>0</option><option>1</option><option>2</option>
-          </select>
-        </div>
-      </div>
-    </td>
-  </tr>
+        <tr>
+          <td>Sedation Score</td>
+          <td>
+            <select name="sedation_score">
+              <option>+4</option><option>+3</option><option>+2</option><option>+1</option>
+              <option>0</option><option>-1</option><option>-2</option><option>-3</option><option>-4</option>
+            </select>
+          </td>
+        </tr>
 
-  <!-- Sedation Score -->
-  <tr>
-    <td>Sedation Score</td>
-    <td>
-      <select name="sedation_score">
-        <option>+4</option><option>+3</option><option>+2</option><option>+1</option>
-        <option>0</option><option>-1</option><option>-2</option><option>-3</option><option>-4</option>
-      </select>
-    </td>
-  </tr>
+        <tr>
+          <td>Analgesia Score</td>
+          <td>
+            <label><input type="checkbox" name="analgesia" value="NRS"> NRS</label>
+            <label><input type="checkbox" name="analgesia" value="CPOT"> CPOT</label>
+            <label><input type="checkbox" name="analgesia" value="BPS"> BPS</label>
+            <label><input type="checkbox" name="analgesia" value="FACES"> FACES</label>
+          </td>
+        </tr>
 
-  <!-- Analgesia -->
-  <tr>
-    <td>Analgesia Score</td>
-    <td>
-      <label><input type="checkbox" name="analgesia" value="NRS"> NRS</label>
-      <label><input type="checkbox" name="analgesia" value="CPOT"> CPOT</label>
-      <label><input type="checkbox" name="analgesia" value="BPS"> BPS</label>
-      <label><input type="checkbox" name="analgesia" value="FACES"> FACES</label>
-    </td>
-  </tr>
+        <tr>
+          <td colspan="2" style="text-align:center;">
+            <button type="button" class="btn primary" onclick="saveNeuroAssessment()">💾 Save Neuro Data</button>
+          </td>
+        </tr>
+      </table>
+    </form>
 
-  <tr>
-    <td colspan="2" style="text-align:center;">
-      <button type="button" style="background:#007bff; color:white; padding:6px 16px; border:none; border-radius:5px;" onclick="saveNeuroAssessment()">
-        💾 Save Neuro Data
-      </button>
-    </td>
-  </tr>
-</table>
+    <h3 style="margin-top:12px;">Saved Neuro Assessment:</h3>
+    <div id="savedNeuroData" style="border:1px solid #aaa;padding:10px;background:#fafafa;"></div>
+  </div>
+</div>
 
-<h3>Saved Neuro Assessment:</h3>
-<div id="savedNeuroData" style="border:1px solid #aaa; padding:10px; background:#fafafa;"></div>
-</section>
 
 <script>
   // if you have a context path like /api, set API_BASE = '/api'
@@ -1068,13 +1377,13 @@
   // ========================
 // Vital Signs Logic
 // ========================
-const API_VITALS = '/vitals';
+const V_API = `${API_BASE}/vitals`;
 
 async function fetchVitals() {
   const tbody = document.getElementById('vitals-list');
   tbody.innerHTML = '';
   try {
-    const res = await fetch(API_VITALS);
+    const res = await fetch(V_API);
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
 
@@ -1093,17 +1402,33 @@ async function fetchVitals() {
         td.textContent = val;
         tr.appendChild(td);
       });
-
+      
       const actionsTd = document.createElement('td');
+actionsTd.className = 'col-actions';
+
+      // --- Edit Button ---
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn ghost';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = () => openVitalsEdit(item);
+      actionsTd.appendChild(editBtn);
+
+      // --- Delete Button ---
       const delBtn = document.createElement('button');
+      delBtn.className = 'btn danger';
+      delBtn.style.marginLeft = '6px';
       delBtn.textContent = 'Delete';
       delBtn.onclick = async () => {
-        if (!confirm('Delete this record?')) return;
-        const res = await fetch(`${API_VITALS}/${item.id}`, { method: 'DELETE' });
-        if (!res.ok) alert('Delete failed: ' + res.status + ' ' + await res.text());
+        if (!confirm('Delete this Vital Signs record?')) return;
+        const res = await fetch(`${V_API}/${item.id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          alert('Delete failed: ' + res.status + ' ' + await res.text());
+          return;
+        }
         await fetchVitals();
       };
       actionsTd.appendChild(delBtn);
+
       tr.appendChild(actionsTd);
       tbody.appendChild(tr);
     });
@@ -1122,7 +1447,7 @@ document.getElementById('vitals-form').addEventListener('submit', async (e) => {
     respiratoryRate: parseInt(document.getElementById('respiratoryRate').value)
   };
   try {
-    const res = await fetch(API_VITALS, {
+    const res = await fetch(V_API, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body)
@@ -1137,6 +1462,74 @@ document.getElementById('vitals-form').addEventListener('submit', async (e) => {
 });
 
 fetchVitals();
+
+// =========================
+// VITAL SIGNS EDIT LOGIC
+// =========================
+function toLocalDT(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d)) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Open edit modal with data
+function openVitalsEdit(item) {
+  document.getElementById('v_edit_id').value = item.id;
+  document.getElementById('v_edit_timeStamp').value = toLocalDT(item.timeStamp);
+  document.getElementById('v_edit_temperature').value = item.temperature ?? '';
+  document.getElementById('v_edit_bpSystolic').value = item.bpSystolic ?? '';
+  document.getElementById('v_edit_bpDiastolic').value = item.bpDiastolic ?? '';
+  document.getElementById('v_edit_heartRate').value = item.heartRate ?? '';
+  document.getElementById('v_edit_respiratoryRate').value = item.respiratoryRate ?? '';
+
+  openModal(document.getElementById('vitalsEditModal'));
+}
+
+// Close modal listeners
+document.querySelectorAll('[data-close-vitals]').forEach(el => {
+  el.addEventListener('click', () => closeModal(document.getElementById('vitalsEditModal')));
+});
+
+// ESC key close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !document.getElementById('vitalsEditModal').classList.contains('hidden')) {
+    closeModal(document.getElementById('vitalsEditModal'));
+  }
+});
+
+// Save updated record
+document.getElementById('vitalsEditSaveBtn').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const id = Number(document.getElementById('v_edit_id').value);
+
+  let ts = document.getElementById('v_edit_timeStamp').value;
+  if (ts && !/:..$/.test(ts)) ts += ':00';
+
+  const body = {
+    timeStamp: ts || null,
+    temperature: parseFloat(document.getElementById('v_edit_temperature').value) || null,
+    bpSystolic: parseInt(document.getElementById('v_edit_bpSystolic').value) || null,
+    bpDiastolic: parseInt(document.getElementById('v_edit_bpDiastolic').value) || null,
+    heartRate: parseInt(document.getElementById('v_edit_heartRate').value) || null,
+    respiratoryRate: parseInt(document.getElementById('v_edit_respiratoryRate').value) || null
+  };
+
+  const res = await fetch(`${V_API}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    alert('Update failed: ' + res.status + ' ' + await res.text());
+    return;
+  }
+
+  closeModal(document.getElementById('vitalsEditModal'));
+  await fetchVitals();
+});
 
 function saveNeuroAssessment() {
   const data = {
@@ -1192,9 +1585,6 @@ function displaySavedData(data) {
 }
 </script>
 
-<<<<<<< HEAD
-<button type="button" onclick="saveNeuroAssessment()">Save Neuro Data</button>
-=======
 <script>
   // ===========================
   // MECHANICAL VENTILATION CRUD
@@ -1642,6 +2032,8 @@ function displaySavedData(data) {
   const items = [
     { trigger: 'output-trigger',   panel: 'output-panel'   },
     { trigger: 'mechvent-trigger', panel: 'mechvent-panel' },
+    { trigger: 'vitals-trigger',   panel: 'vitals-panel'   },
+    { trigger: 'neuro-trigger',    panel: 'neuro-panel'    },
     { trigger: 'others-trigger',   panel: 'others-panel'   },
   ];
 
@@ -1699,13 +2091,14 @@ function displaySavedData(data) {
     return {btn, pnl};
   }).filter(Boolean);
 
-  // If you want one of them open by default, call open(ref.btn, ref.pnl) here.
-  // Example: open(refs[0].btn, refs[0].pnl); // open OUTPUT initially
+   // Open the VITAL SIGNS accordion by default
+  const vitalsRef = refs.find(r => r.btn.id === 'vitals-trigger');
+  if (vitalsRef) open(vitalsRef.btn, vitalsRef.pnl);
+
 })();
 </script>
 
 
->>>>>>> tela-branch1
 
 </body>
 </html>
