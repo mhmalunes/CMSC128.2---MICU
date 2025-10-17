@@ -80,16 +80,76 @@
     .scroll-container::-webkit-scrollbar-thumb:hover {
       background-color: #999;
     }
+    /* One-piece accordion card (title + content share the same box) */
+  .accordion-item{
+    max-width:1100px;
+    margin:0 auto 15px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+    overflow:hidden;                /* keeps rounded corners when panel opens */
+  }
 
+  /* Header becomes the top of the same card */
+  .accordion-item .accordion-trigger{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px;
+    background:transparent;         /* same card */
+    color:var(--text);
+    border:0;                       /* no separate border */
+    border-radius:0;
+    font-weight:800; font-size:20px;
+    cursor:pointer;
+  }
+  .accordion-item .accordion-trigger:hover{ background:#f8fafc; }
+  .accordion-item .accordion-trigger:focus-visible{ outline:2px solid var(--primary); outline-offset:-2px; }
 
+  .accordion-item .chev{
+    width:22px; height:22px; stroke: currentColor; stroke-width:2; fill:none;
+    transform: rotate(0deg); transition: transform .2s ease;
+  }
+  .accordion-item .accordion-trigger[aria-expanded="true"] .chev{ transform: rotate(180deg); }
+
+  /* Panel is the bottom of the same card */
+  .accordion-item .accordion-panel{
+    overflow:hidden;
+    max-height:0;
+    padding:0 20px;                 /* horizontal padding of the card */
+    transition:max-height .25s ease, padding-top .2s ease, padding-bottom .2s ease;
+  }
+  .accordion-item .accordion-panel.is-open{
+    padding-top:12px;               /* when open, add vertical padding */
+    padding-bottom:16px;
+  }
+
+  /* Remove the extra inner container spacing for this accordion only */
+  #outputAccordion .container{ 
+    box-shadow:none; border:0; border-radius:0; padding:0; margin:0; 
+    background:transparent;
+  }
   </style>
 </head>
 <body>
 
   <h1>MICU CRUD System - Patient Records</h1>
 
-  <div class="container">
-    <h2 class="section-title">OUTPUT</h2>
+ <!-- ===== OUTPUT (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="outputAccordion">
+  <button
+    id="output-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="output-panel"
+  >
+    <span>OUTPUT</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
+
+  <div id="output-panel" class="accordion-panel" role="region" aria-labelledby="output-trigger" hidden>
+    <!-- (no extra .container here — the panel shares the same card as the title) -->
 
     <form id="record-form" autocomplete="off">
       <div class="grid">
@@ -123,11 +183,8 @@
         <div class="field" style="grid-column:span 3">
           <select id="stoolForm">
             <option value="">Stool form (optional)</option>
-            <option>Formed</option>
-            <option>Loose</option>
-            <option>Watery</option>
-            <option>Soft</option>
-            <option>Hard</option>
+            <option>Formed</option><option>Loose</option><option>Watery</option>
+            <option>Soft</option><option>Hard</option>
           </select>
         </div>
         <div class="field" style="grid-column:span 3">
@@ -145,10 +202,8 @@
           <button type="button" class="btn ghost" id="othersAddBtn">Add</button>
         </div>
 
-        <!-- Preset chips -->
         <div id="othersPresets" style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
-        <!-- Chips for what will be saved this submit -->
-        <div id="othersChips" style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <div id="othersChips"   style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
 
         <div style="grid-column:span 12">
           <div class="muted" style="margin:4px 0 6px">Remarks / Notes</div>
@@ -186,94 +241,104 @@
       <span id="totNight">Night shift: 0 mL</span>
     </div>
   </div>
-  <!-- ========================================= -->
- <!-- MECHANICAL VENTILATION -->
-<div class="container" id="mechventSection">
-  <h2 class="section-title">MECHANICAL VENTILATION</h2>
+</div>
+<!-- ========================================= -->
+<!-- ===== MECHANICAL VENTILATION (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="mechventAccordion">
+  <button
+    id="mechvent-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="mechvent-panel"
+  >
+    <span>MECHANICAL VENTILATION</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
 
-  <form id="mechvent-form" autocomplete="off">
-    <div class="grid">
-      <div class="field" style="grid-column:span 4">
-        <input type="datetime-local" id="mv_recordedAt" aria-label="Time stamp"/>
+  <div id="mechvent-panel" class="accordion-panel" role="region" aria-labelledby="mechvent-trigger" hidden>
+    <!-- form (unchanged IDs) -->
+    <form id="mechvent-form" autocomplete="off">
+      <div class="grid">
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="mv_recordedAt" aria-label="Time stamp"/>
+        </div>
+
+        <label class="checkbox" style="grid-column:span 2">
+          <input type="checkbox" id="mv_intubated"/><span>Intubated</span>
+        </label>
+
+        <div class="field" style="grid-column:span 3">
+          <select id="mv_mode">
+            <option value="AC_VC">AC/VC</option>
+            <option value="AC_PC">AC/PC</option>
+            <option value="SIMV_VC">SIMV/VC</option>
+            <option value="SIMV_PC">SIMV/PC</option>
+            <option value="PSV">PSV</option>
+            <option value="CPAP">CPAP</option>
+            <option value="BIPAP">BiPAP</option>
+            <option value="SPONTANEOUS">Spontaneous</option>
+            <option value="OTHER">Other…</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="text" id="mv_mode_other" placeholder="If Other, specify…" style="display:none"/>
+        </div>
+
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_fio2" min="1" max="100" placeholder="FiO₂ (%)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_tvMl" min="0" placeholder="Tidal Volume (mL)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_burBpm" min="0" placeholder="Backup Rate (bpm)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_psCmh2o" min="0" placeholder="PS (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_p1Cmh2o" min="0" placeholder="P1 (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_t1Seconds" min="0" step="0.01" placeholder="T1 (s)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_ifrLpm" min="0" step="0.01" placeholder="IFR (L/min)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="text"   id="mv_ieRatio" placeholder="I:E (e.g., 1:2)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_peepCmh2o" min="0" placeholder="PEEP (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_triggerSens" min="0" step="0.01" placeholder="Trigger Sens."/></div>
+
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks / Notes (optional)</div>
+          <textarea id="mv_remarks" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add MechVent Record</button>
+        </div>
       </div>
+    </form>
 
-      <label class="checkbox" style="grid-column:span 2">
-        <input type="checkbox" id="mv_intubated"/><span>Intubated</span>
-      </label>
-
-      <div class="field" style="grid-column:span 3">
-        <select id="mv_mode">
-          <option value="AC_VC">AC/VC</option>
-          <option value="AC_PC">AC/PC</option>
-          <option value="SIMV_VC">SIMV/VC</option>
-          <option value="SIMV_PC">SIMV/PC</option>
-          <option value="PSV">PSV</option>
-          <option value="CPAP">CPAP</option>
-          <option value="BIPAP">BiPAP</option>
-          <option value="SPONTANEOUS">Spontaneous</option>
-          <option value="OTHER">Other…</option>
-        </select>
-      </div>
-      <div class="field" style="grid-column:span 3">
-        <input type="text" id="mv_mode_other" placeholder="If Other, specify…" style="display:none"/>
-      </div>
-
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_fio2" min="1" max="100" placeholder="FiO₂ (%)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_tvMl" min="0" placeholder="Tidal Volume (mL)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_burBpm" min="0" placeholder="Backup Rate (bpm)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_psCmh2o" min="0" placeholder="PS (cmH₂O)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_p1Cmh2o" min="0" placeholder="P1 (cmH₂O)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_t1Seconds" min="0" step="0.01" placeholder="T1 (s)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_ifrLpm" min="0" step="0.01" placeholder="IFR (L/min)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="text"   id="mv_ieRatio" placeholder="I:E (e.g., 1:2)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_peepCmh2o" min="0" placeholder="PEEP (cmH₂O)"/></div>
-      <div class="field" style="grid-column:span 2"><input type="number" id="mv_triggerSens" min="0" step="0.01" placeholder="Trigger Sens."/></div>
-
-      <div style="grid-column:span 12">
-        <div class="muted" style="margin:4px 0 6px">Remarks / Notes (optional)</div>
-        <textarea id="mv_remarks" placeholder="Add remarks here (optional)…"></textarea>
-      </div>
-
-      <div class="actions-right" style="grid-column:span 12">
-        <button type="submit" class="btn primary">Add MechVent Record</button>
-      </div>
+    <!-- table -->
+    <div class="scroll-container">
+      <table class="data-table" id="mechvent-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Timestamp</th><th>Intubated</th><th>Mode</th><th>FiO₂</th>
+            <th>TV</th><th>BUR</th><th>PS</th><th>P1</th><th>T1</th><th>IFR</th>
+            <th>I:E</th><th>PEEP</th><th>Trigger</th><th>Remarks</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="mechvent-list"></tbody>
+      </table>
     </div>
-  </form>
-
-  <div class="scroll-container">
-  <table class="data-table" id="mechvent-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Timestamp</th>
-        <th>Intubated</th>
-        <th>Mode</th>
-        <th>FiO₂</th>
-        <th>TV</th>
-        <th>BUR</th>
-        <th>PS</th>
-        <th>P1</th>
-        <th>T1</th>
-        <th>IFR</th>
-        <th>I:E</th>
-        <th>PEEP</th>
-        <th>Trigger</th>
-        <th>Remarks</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="mechvent-list"></tbody>
-  </table>
+  </div>
 </div>
-
-</div>
-
 
   <!-- ========================================= -->
-  <!-- OTHERS (ECG/CBG/Insulin) -->
-  <div class="container" id="othersSection">
-    <h2 class="section-title">OTHERS</h2>
+  <!-- ===== OTHERS (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="othersAccordion">
+  <button
+    id="others-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="others-panel"
+  >
+    <span>OTHERS</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
 
+  <div id="others-panel" class="accordion-panel" role="region" aria-labelledby="others-trigger" hidden>
+    <!-- form (unchanged IDs) -->
     <form id="others-form" autocomplete="off">
       <div class="grid">
         <!-- ECG -->
@@ -349,7 +414,7 @@
       <tbody id="others-list"></tbody>
     </table>
   </div>
-  <!-- ========================================= -->
+</div>
 
   <!-- === Edit Modal (OUTPUT) === -->
   <div id="editModal" class="modal hidden" aria-hidden="true">
@@ -1251,6 +1316,75 @@
   }
 </script>
 <!-- ========================================= -->
+ <script>
+(function(){
+  // List your accordion trigger/panel IDs here
+  const items = [
+    { trigger: 'output-trigger',   panel: 'output-panel'   },
+    { trigger: 'mechvent-trigger', panel: 'mechvent-panel' },
+    { trigger: 'others-trigger',   panel: 'others-panel'   },
+  ];
+
+  const singleOpen = false; // set to false if you want multiple open
+
+  const open = (btn, panel) => {
+    btn.setAttribute('aria-expanded','true');
+    panel.hidden = false;
+    panel.classList.add('is-open');
+    panel.style.maxHeight = panel.scrollHeight + 'px';
+    panel.addEventListener('transitionend', function onEnd(){
+      panel.style.maxHeight = 'none';
+      panel.removeEventListener('transitionend', onEnd);
+    });
+  };
+
+  const close = (btn, panel) => {
+    btn.setAttribute('aria-expanded','false');
+    panel.style.maxHeight = panel.scrollHeight + 'px';
+    void panel.offsetHeight; // reflow
+    panel.style.maxHeight = '0px';
+    panel.classList.remove('is-open');
+    panel.addEventListener('transitionend', function onEnd(){
+      panel.hidden = true;
+      panel.removeEventListener('transitionend', onEnd);
+    });
+  };
+
+  const refs = items.map(({trigger, panel}) => {
+    const btn = document.getElementById(trigger);
+    const pnl = document.getElementById(panel);
+    if(!btn || !pnl) return null;
+    // start closed
+    pnl.hidden = true;
+    pnl.style.maxHeight = '0px';
+    btn.addEventListener('click', () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      if (singleOpen) {
+        refs.forEach(ref => {
+          if (!ref) return;
+          if (ref.btn !== btn) close(ref.btn, ref.pnl);
+        });
+      }
+      isOpen ? close(btn, pnl) : open(btn, pnl);
+    });
+    // keyboard niceties across headers
+    btn.addEventListener('keydown', e => {
+      const order = refs.filter(Boolean).map(r => r.btn);
+      const i = order.indexOf(btn);
+      if (e.key === 'ArrowDown') { e.preventDefault(); (order[i+1] || order[0]).focus(); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); (order[i-1] || order[order.length-1]).focus(); }
+      if (e.key === 'Home')      { e.preventDefault(); order[0].focus(); }
+      if (e.key === 'End')       { e.preventDefault(); order[order.length-1].focus(); }
+    });
+    return {btn, pnl};
+  }).filter(Boolean);
+
+  // If you want one of them open by default, call open(ref.btn, ref.pnl) here.
+  // Example: open(refs[0].btn, refs[0].pnl); // open OUTPUT initially
+})();
+</script>
+
+
 
 </body>
 </html>
