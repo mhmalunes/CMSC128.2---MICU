@@ -30,10 +30,37 @@ public class Output {
     @Column(columnDefinition = "text")
     private String others;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "ngt_remarks", columnDefinition = "text")
+    private String ngtRemarks;
+
+    @Column(name = "vomitus_remarks", columnDefinition = "text")
+    private String vomitusRemarks;
+
+    // NEW: Stool details (optional)
+    @Column(name = "stool_form")         // e.g., "Formed", "Loose", "Watery", etc.
+    private String stoolForm;
+
+    @Column(name = "stool_volume_ml")    // optional measured stool volume
+    private Integer stoolVolumeMl;
+
+        // EDIT HERE ▾ add a dedicated remarks/notes field
+    @Column(name = "remarks", columnDefinition = "text")
+    private String remarks;
+
     @PrePersist
     public void prePersist() {
         if (timeStamp == null) timeStamp = LocalDateTime.now();
         if (stool == null) stool = false;
+
+        if (updatedAt == null) updatedAt = timeStamp;
+    }
+
+     @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     // getters/setters...
@@ -51,4 +78,21 @@ public class Output {
     public void setStool(Boolean stool) { this.stool = stool; }
     public String getOthers() { return others; }
     public void setOthers(String others) { this.others = others; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
+
+     public String getNgtRemarks() { return ngtRemarks; }
+    public void setNgtRemarks(String ngtRemarks) { this.ngtRemarks = ngtRemarks; }
+
+    public String getVomitusRemarks() { return vomitusRemarks; }
+    public void setVomitusRemarks(String vomitusRemarks) { this.vomitusRemarks = vomitusRemarks; }
+
+    public String getStoolForm() { return stoolForm; }
+    public void setStoolForm(String stoolForm) { this.stoolForm = stoolForm; }
+
+    public Integer getStoolVolumeMl() { return stoolVolumeMl; }
+    public void setStoolVolumeMl(Integer stoolVolumeMl) { this.stoolVolumeMl = stoolVolumeMl; }
 }

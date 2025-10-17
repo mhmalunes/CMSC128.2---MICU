@@ -2,61 +2,611 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MICU CRUD System - Patient Records</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-    h1 { text-align: center; }
-    section { background: #fff; padding: 20px; margin: 20px auto; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,.1); max-width: 900px; }
-    form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    input[type="text"], input[type="number"], input[type="datetime-local"] {
-      padding: 10px; border: 1px solid #ccc; border-radius: 4px; flex: 1 1 180px;
+    :root{
+      --bg:#f3f6fb; --card:#ffffff; --text:#111827; --muted:#6b7280;
+      --primary:#0b68ff; --primary-700:#0852c8; --border:#e5e7eb;
+      --success:#10b981; --danger:#ef4444;
     }
-    label.checkbox { display: flex; align-items: center; gap: 6px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: #fafafa; }
-    button { padding: 10px 14px; border: 0; border-radius: 4px; background: #007bff; color: #fff; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background: #007bff; color: #fff; }
-    tr:nth-child(even) { background: #f7f7f7; }
-    .actions button { margin-right: 6px; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    h1{font-weight:800;letter-spacing:.5px;text-align:center;margin:32px 16px}
+    .container{max-width:1100px;margin:0 auto 48px;background:var(--card);
+      border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:28px}
+    .section-title{font-size:28px;font-weight:800;margin:0 0 14px}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .field{display:flex;align-items:center;background:#fff;border:1px solid var(--border);
+      border-radius:10px;padding:10px 12px}
+    .field input[type="text"], .field input[type="number"], .field input[type="datetime-local"], .field select{
+      width:100%;border:0;outline:0;font-size:14px;background:transparent;color:var(--text)
+    }
+    .checkbox{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);
+      border-radius:10px;padding:10px 12px}
+    textarea{width:100%;min-height:84px;resize:vertical;border:1px solid var(--border);
+      border-radius:12px;padding:12px;font-size:14px;color:var(--text);background:#fff}
+    .actions-right{display:flex;justify-content:flex-end;align-items:center}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border:0;border-radius:999px;
+      font-weight:600;cursor:pointer;transition:.15s ease;user-select:none}
+    .btn.primary{background:var(--primary);color:#fff}
+    .btn.primary:hover{background:var(--primary-700)}
+    .btn.ghost{background:#eef4ff;color:var(--primary)}
+    .btn.ghost:hover{background:#e3ecff}
+    .btn.danger{background:var(--danger);color:#fff}
+
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:18px;overflow:hidden;border-radius:12px}
+    thead th{background:var(--primary);color:#fff;text-align:left;padding:12px 14px;font-weight:700}
+    tbody td{background:#fff;border-bottom:1px solid var(--border);padding:12px 14px;vertical-align:top}
+    tbody tr:nth-child(even) td{background:#fbfdff}
+    .col-actions{white-space:nowrap}
+    .remarks-cell{white-space:normal;word-wrap:break-word;max-width:380px}
+    .muted{color:var(--muted);font-size:12px}
+
+    .chip{display:inline-flex;align-items:center;gap:6px;background:#eef4ff;color:#0b68ff;
+      border:1px solid #dbe7ff;padding:6px 10px;border-radius:999px;font-size:13px}
+    .chip button{border:0;background:transparent;color:#0b68ff;cursor:pointer;font-weight:700;padding:0 4px}
+
+    .modal.hidden{display:none}
+    .modal{position:fixed;inset:0;z-index:60}
+    .modal__backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+    .modal__dialog{position:relative; z-index:61; width:min(720px, 92vw); margin:6vh auto; background:#fff; border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column;}
+    .modal__header,.modal__footer{padding:14px 18px; border-bottom:1px solid var(--border)}
+    .modal__footer{border-top:1px solid var(--border); border-bottom:none; display:flex; justify-content:flex-end; gap:8px}
+    .modal__body{padding:16px 18px}
+    .modal__close{border:0;background:transparent;font-size:24px;cursor:pointer;line-height:1}
+
+    @media (max-width:900px){.grid{grid-template-columns:repeat(6,1fr)} .remarks-cell{max-width:100%}}
+    @media (max-width:640px){.grid{grid-template-columns:repeat(4,1fr)} .btn{padding:9px 12px}}
+        .scroll-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-radius: 10px;
+      background: white;
+    }
+
+    /* Optional: match look across sections */
+    .scroll-container::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb {
+      background-color: #ccc;
+      border-radius: 4px;
+    }
+
+    .scroll-container::-webkit-scrollbar-thumb:hover {
+      background-color: #999;
+    }
+    /* One-piece accordion card (title + content share the same box) */
+  .accordion-item{
+    max-width:1100px;
+    margin:0 auto 15px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,.06);
+    overflow:hidden;                /* keeps rounded corners when panel opens */
+  }
+
+  /* Header becomes the top of the same card */
+  .accordion-item .accordion-trigger{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px;
+    background:transparent;         /* same card */
+    color:var(--text);
+    border:0;                       /* no separate border */
+    border-radius:0;
+    font-weight:800; font-size:20px;
+    cursor:pointer;
+  }
+  .accordion-item .accordion-trigger:hover{ background:#f8fafc; }
+  .accordion-item .accordion-trigger:focus-visible{ outline:2px solid var(--primary); outline-offset:-2px; }
+
+  .accordion-item .chev{
+    width:22px; height:22px; stroke: currentColor; stroke-width:2; fill:none;
+    transform: rotate(0deg); transition: transform .2s ease;
+  }
+  .accordion-item .accordion-trigger[aria-expanded="true"] .chev{ transform: rotate(180deg); }
+
+  /* Panel is the bottom of the same card */
+  .accordion-item .accordion-panel{
+    overflow:hidden;
+    max-height:0;
+    padding:0 20px;                 /* horizontal padding of the card */
+    transition:max-height .25s ease, padding-top .2s ease, padding-bottom .2s ease;
+  }
+  .accordion-item .accordion-panel.is-open{
+    padding-top:12px;               /* when open, add vertical padding */
+    padding-bottom:16px;
+  }
+
+  /* Remove the extra inner container spacing for this accordion only */
+  #outputAccordion .container{ 
+    box-shadow:none; border:0; border-radius:0; padding:0; margin:0; 
+    background:transparent;
+  }
   </style>
 </head>
 <body>
 
-<h1>MICU CRUD System - Patient Records</h1>
+  <h1>MICU CRUD System - Patient Records</h1>
 
-<section>
-  <h2>OUTPUT</h2>
+ <!-- ===== OUTPUT (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="outputAccordion">
+  <button
+    id="output-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="output-panel"
+  >
+    <span>OUTPUT</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
 
-  <form id="record-form">
-    <input type="datetime-local" id="timeStamp" />
-    <input type="number" id="urineMl"         placeholder="Urine (mL)" />
-    <input type="number" id="ngtResidualsMl"  placeholder="NGT Residuals (mL)" />
-    <input type="number" id="vomitusMl"       placeholder="Vomitus (mL)" />
-    <label class="checkbox" title="Stool present">
-      <input type="checkbox" id="stool" /> Stool
-    </label>
-    <input type="text"   id="others"          placeholder="Others" />
-    <button type="submit">Add Record</button>
-  </form>
+  <div id="output-panel" class="accordion-panel" role="region" aria-labelledby="output-trigger" hidden>
+    <!-- (no extra .container here — the panel shares the same card as the title) -->
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Time Stamp</th>
-        <th>Urine (mL)</th>
-        <th>NGT Residuals (mL)</th>
-        <th>Vomitus (mL)</th>
-        <th>Stool</th>
-        <th>Others</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="record-list"></tbody>
-  </table>
-</section>
+    <form id="record-form" autocomplete="off">
+      <div class="grid">
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="timeStamp" aria-label="Time stamp"/>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="urineMl" placeholder="Urine (mL)"/>
+        </div>
+
+        <!-- NGT Residuals + remarks -->
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="ngtResidualsMl" placeholder="NGT Residuals (mL)"/>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="ngtRemarks" placeholder="NGT remarks (e.g., re-fed / discarded)"/>
+        </div>
+
+        <!-- Vomitus + remarks -->
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="vomitusMl" placeholder="Vomitus (mL)"/>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="vomitusRemarks" placeholder="Vomitus remarks (color/character)"/>
+        </div>
+
+        <!-- Stool + form + optional volume -->
+        <label class="checkbox" style="grid-column:span 2">
+          <input type="checkbox" id="stool"/><span>Stool</span>
+        </label>
+        <div class="field" style="grid-column:span 3">
+          <select id="stoolForm">
+            <option value="">Stool form (optional)</option>
+            <option>Formed</option><option>Loose</option><option>Watery</option>
+            <option>Soft</option><option>Hard</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="stoolVolumeMl" placeholder="Stool volume (mL, optional)"/>
+        </div>
+
+        <!-- Others: Name + mL + Add -->
+        <div style="grid-column:span 8; display:flex; gap:10px; align-items:flex-start;">
+          <div class="field" style="flex:2">
+            <input type="text" id="othersName" placeholder="Others name (e.g., 'Drain')" />
+          </div>
+          <div class="field" style="flex:1; max-width:150px">
+            <input type="number" id="othersAmount" placeholder="mL" />
+          </div>
+          <button type="button" class="btn ghost" id="othersAddBtn">Add</button>
+        </div>
+
+        <div id="othersPresets" style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
+        <div id="othersChips"   style="grid-column:span 12; display:flex; flex-wrap:wrap; gap:8px;"></div>
+
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks / Notes</div>
+          <textarea id="remarks" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add Record</button>
+        </div>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Time Stamp</th>
+          <th>Urine (mL)</th>
+          <th>NGT Residuals (mL)</th>
+          <th>Vomitus (mL)</th>
+          <th>Stool</th>
+          <th>Others</th>
+          <th>Total (row)</th>
+          <th>Remarks</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="record-list"></tbody>
+    </table>
+
+    <div id="totalsBox" class="muted" style="margin-top:10px">
+      <strong>Totals:</strong>
+      <span id="totRunning">Running: 0 mL</span> •
+      <span id="totDay">Day shift: 0 mL</span> •
+      <span id="totNight">Night shift: 0 mL</span>
+    </div>
+  </div>
+</div>
+<!-- ========================================= -->
+<!-- ===== MECHANICAL VENTILATION (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="mechventAccordion">
+  <button
+    id="mechvent-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="mechvent-panel"
+  >
+    <span>MECHANICAL VENTILATION</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
+
+  <div id="mechvent-panel" class="accordion-panel" role="region" aria-labelledby="mechvent-trigger" hidden>
+    <!-- form (unchanged IDs) -->
+    <form id="mechvent-form" autocomplete="off">
+      <div class="grid">
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="mv_recordedAt" aria-label="Time stamp"/>
+        </div>
+
+        <label class="checkbox" style="grid-column:span 2">
+          <input type="checkbox" id="mv_intubated"/><span>Intubated</span>
+        </label>
+
+        <div class="field" style="grid-column:span 3">
+          <select id="mv_mode">
+            <option value="AC_VC">AC/VC</option>
+            <option value="AC_PC">AC/PC</option>
+            <option value="SIMV_VC">SIMV/VC</option>
+            <option value="SIMV_PC">SIMV/PC</option>
+            <option value="PSV">PSV</option>
+            <option value="CPAP">CPAP</option>
+            <option value="BIPAP">BiPAP</option>
+            <option value="SPONTANEOUS">Spontaneous</option>
+            <option value="OTHER">Other…</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="text" id="mv_mode_other" placeholder="If Other, specify…" style="display:none"/>
+        </div>
+
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_fio2" min="1" max="100" placeholder="FiO₂ (%)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_tvMl" min="0" placeholder="Tidal Volume (mL)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_burBpm" min="0" placeholder="Backup Rate (bpm)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_psCmh2o" min="0" placeholder="PS (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_p1Cmh2o" min="0" placeholder="P1 (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_t1Seconds" min="0" step="0.01" placeholder="T1 (s)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_ifrLpm" min="0" step="0.01" placeholder="IFR (L/min)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="text"   id="mv_ieRatio" placeholder="I:E (e.g., 1:2)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_peepCmh2o" min="0" placeholder="PEEP (cmH₂O)"/></div>
+        <div class="field" style="grid-column:span 2"><input type="number" id="mv_triggerSens" min="0" step="0.01" placeholder="Trigger Sens."/></div>
+
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks / Notes (optional)</div>
+          <textarea id="mv_remarks" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add MechVent Record</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- table -->
+    <div class="scroll-container">
+      <table class="data-table" id="mechvent-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Timestamp</th><th>Intubated</th><th>Mode</th><th>FiO₂</th>
+            <th>TV</th><th>BUR</th><th>PS</th><th>P1</th><th>T1</th><th>IFR</th>
+            <th>I:E</th><th>PEEP</th><th>Trigger</th><th>Remarks</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="mechvent-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <!-- ========================================= -->
+  <!-- ===== OTHERS (Accordion - single joined card) ===== -->
+<div class="accordion-item" id="othersAccordion">
+  <button
+    id="others-trigger"
+    class="accordion-trigger"
+    type="button"
+    aria-expanded="false"
+    aria-controls="others-panel"
+  >
+    <span>OTHERS</span>
+    <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+  </button>
+
+  <div id="others-panel" class="accordion-panel" role="region" aria-labelledby="others-trigger" hidden>
+    <!-- form (unchanged IDs) -->
+    <form id="others-form" autocomplete="off">
+      <div class="grid">
+        <!-- ECG -->
+        <div class="muted" style="grid-column:span 12">ECG</div>
+        <div class="field" style="grid-column:span 5">
+          <select id="ecgCode"></select>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="text" id="ecgOtherText" placeholder="If 'Other', specify…" disabled />
+        </div>
+        <div class="field" style="grid-column:span 3">
+          <input type="datetime-local" id="ecgTime" placeholder="ECG time (optional)" />
+        </div>
+
+        <!-- CBG -->
+        <div class="muted" style="grid-column:span 12;margin-top:6px">CBG</div>
+        <div class="field" style="grid-column:span 3">
+          <input type="number" id="cbgMgdl" placeholder="CBG (mg/dL)" />
+        </div>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsFasting"/> <span>Fasting</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsRandom"/> <span>Random</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsPreFeed"/> <span>Pre-feed</span></label>
+        <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="cbgIsPostFeed"/> <span>Post-feed</span></label>
+        <div class="field" style="grid-column:span 3">
+          <input type="datetime-local" id="cbgTime" placeholder="CBG time (optional)" />
+        </div>
+
+        <!-- Insulin -->
+        <div class="muted" style="grid-column:span 12;margin-top:6px">Insulin</div>
+        <div class="field" style="grid-column:span 4">
+          <select id="insulinTypeCode"></select>
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <input type="number" id="insulinDoseUnits" placeholder="Dose (Units)" />
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <select id="insulinRoute">
+            <option value="">Route (optional)</option>
+            <option value="SC">SC</option>
+            <option value="IV">IV</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column:span 4">
+          <input type="datetime-local" id="insulinTimeGiven" placeholder="Time given (optional)" />
+        </div>
+
+        <!-- Single overall remarks -->
+        <div style="grid-column:span 12">
+          <div class="muted" style="margin:4px 0 6px">Remarks (optional)</div>
+          <textarea id="remarksOthers" placeholder="Add remarks here (optional)…"></textarea>
+        </div>
+
+        <div class="actions-right" style="grid-column:span 12">
+          <button type="submit" class="btn primary">Add Others Record</button>
+        </div>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>ECG</th>
+          <th>ECG Time</th>
+          <th>CBG (mg/dL)</th>
+          <th>CBG Time</th>
+          <th>Insulin (Type/Dose/Route)</th>
+          <th>Insulin Time</th>
+          <th>Remarks</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="others-list"></tbody>
+    </table>
+  </div>
+</div>
+
+  <!-- === Edit Modal (OUTPUT) === -->
+  <div id="editModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="modal__header">
+        <h3 id="editTitle">Edit Output</h3>
+        <button class="modal__close" title="Close" data-close>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="editForm" class="grid" autocomplete="off">
+          <input type="hidden" id="edit_id"/>
+
+          <div class="field" style="grid-column:span 6">
+            <input type="datetime-local" id="edit_timeStamp" />
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_urineMl" placeholder="Urine (mL)"/>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_ngtResidualsMl" placeholder="NGT (mL)"/>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="edit_vomitusMl" placeholder="Vomitus (mL)"/>
+          </div>
+
+          <label class="checkbox" style="grid-column:span 3">
+            <input type="checkbox" id="edit_stool"/>
+            <span>Stool present</span>
+          </label>
+
+          <div class="field" style="grid-column:span 3">
+            <select id="edit_stoolForm">
+              <option value="">Stool form (optional)</option>
+              <option>Formed</option><option>Loose</option><option>Watery</option><option>Soft</option><option>Hard</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:span 3">
+            <input type="number" id="edit_stoolVolumeMl" placeholder="Stool volume (mL)"/>
+          </div>
+
+          <div class="field" style="grid-column:span 6">
+            <input type="text" id="edit_ngtRemarks" placeholder="NGT remarks"/>
+          </div>
+          <div class="field" style="grid-column:span 6">
+            <input type="text" id="edit_vomitusRemarks" placeholder="Vomitus remarks"/>
+          </div>
+
+          <div class="field" style="grid-column:span 12">
+            <input type="text" id="edit_others" placeholder="Others (free text; use ; to separate)"/>
+          </div>
+
+          <div style="grid-column:span 12">
+            <textarea id="edit_remarks" placeholder="Remarks / Notes"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close>Cancel</button>
+        <button class="btn primary" id="editSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+  <!-- === Edit Modal (MECHVENT) === -->
+  <div id="mvEditModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close-mv></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mvEditTitle">
+      <div class="modal__header">
+        <h3 id="mvEditTitle">Edit Mechanical Ventilation</h3>
+        <button class="modal__close" title="Close" data-close-mv>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="mvEditForm" class="grid" autocomplete="off">
+          <input type="hidden" id="mv_edit_id"/>
+
+          <div class="field" style="grid-column:span 4">
+            <input type="datetime-local" id="mv_edit_recordedAt" />
+          </div>
+
+          <label class="checkbox" style="grid-column:span 2">
+            <input type="checkbox" id="mv_edit_intubated"/><span>Intubated</span>
+          </label>
+
+          <div class="field" style="grid-column:span 3">
+            <select id="mv_edit_mode">
+              <option value="AC_VC">AC/VC</option>
+              <option value="AC_PC">AC/PC</option>
+              <option value="SIMV_VC">SIMV/VC</option>
+              <option value="SIMV_PC">SIMV/PC</option>
+              <option value="PSV">PSV</option>
+              <option value="CPAP">CPAP</option>
+              <option value="BIPAP">BiPAP</option>
+              <option value="SPONTANEOUS">Spontaneous</option>
+              <option value="OTHER">Other…</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:span 3">
+            <input type="text" id="mv_edit_mode_other" placeholder="If Other, specify…" style="display:none"/>
+          </div>
+
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_fio2" min="1" max="100" placeholder="FiO₂ (%)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_tvMl" min="0" placeholder="TV (mL)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_burBpm" min="0" placeholder="BUR (bpm)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_psCmh2o" min="0" placeholder="PS (cmH₂O)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_p1Cmh2o" min="0" placeholder="P1 (cmH₂O)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_t1Seconds" min="0" step="0.01" placeholder="T1 (s)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_ifrLpm" min="0" step="0.01" placeholder="IFR (L/min)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="text"   id="mv_edit_ieRatio" placeholder="I:E (e.g., 1:2)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_peepCmh2o" min="0" placeholder="PEEP (cmH₂O)"/></div>
+          <div class="field" style="grid-column:span 2"><input type="number" id="mv_edit_triggerSens" min="0" step="0.01" placeholder="Trigger Sens."/></div>
+
+          <div style="grid-column:span 12">
+            <textarea id="mv_edit_remarks" placeholder="Remarks (optional)…"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close-mv>Cancel</button>
+        <button class="btn primary" id="mvEditSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- === Edit Modal (OTHERS) === -->
+  <div id="othersEditModal" class="modal hidden" aria-hidden="true">
+    <div class="modal__backdrop" data-close-others></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="othersEditTitle">
+      <div class="modal__header">
+        <h3 id="othersEditTitle">Edit Others</h3>
+        <button class="modal__close" title="Close" data-close-others>&times;</button>
+      </div>
+
+      <div class="modal__body">
+        <form id="othersEditForm" class="grid" autocomplete="off">
+          <input type="hidden" id="o_edit_id"/>
+
+          <div class="field" style="grid-column:span 5">
+            <select id="o_edit_ecgCode"></select>
+          </div>
+          <div class="field" style="grid-column:span 4">
+            <input type="text" id="o_edit_ecgOtherText" placeholder="If 'Other', specify…" disabled />
+          </div>
+          <div class="field" style="grid-column:span 3">
+            <input type="datetime-local" id="o_edit_ecgTime" />
+          </div>
+
+          <div class="field" style="grid-column:span 3">
+            <input type="number" id="o_edit_cbgMgdl" placeholder="CBG (mg/dL)" />
+          </div>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsFasting"/> <span>Fasting</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsRandom"/> <span>Random</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsPreFeed"/> <span>Pre-feed</span></label>
+          <label class="checkbox" style="grid-column:span 2"><input type="checkbox" id="o_edit_cbgIsPostFeed"/> <span>Post-feed</span></label>
+          <div class="field" style="grid-column:span 3">
+            <input type="datetime-local" id="o_edit_cbgTime" />
+          </div>
+
+          <div class="field" style="grid-column:span 4">
+            <select id="o_edit_insulinTypeCode"></select>
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <input type="number" id="o_edit_insulinDoseUnits" placeholder="Dose (Units)" />
+          </div>
+          <div class="field" style="grid-column:span 2">
+            <select id="o_edit_insulinRoute">
+              <option value="">Route</option>
+              <option value="SC">SC</option>
+              <option value="IV">IV</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:span 4">
+            <input type="datetime-local" id="o_edit_insulinTimeGiven" />
+          </div>
+
+          <!-- single overall remarks -->
+          <div style="grid-column:span 12">
+            <textarea id="o_edit_remarks" placeholder="Remarks (optional)…"></textarea>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn ghost" data-close-others>Cancel</button>
+        <button class="btn primary" id="othersEditSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
 
 <section>
   <h2>VITAL SIGNS</h2>
@@ -249,123 +799,267 @@
 </section>
 
 <script>
-  const API = '/outputs'; // same-origin; if different host, use full URL and ensure CORS
+  // if you have a context path like /api, set API_BASE = '/api'
+  const API_BASE = '';
+  const API  = `${API_BASE}/outputs`;
+  const O_API = `${API_BASE}/others`;
 
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
   const fmtDateTime = (v) => {
     if (!v) return '';
-    // display as local yyyy-MM-dd HH:mm
     const d = new Date(v);
     if (isNaN(d)) return v;
-    const pad = (n) => String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
+  const toIntOrNull = v => (v === '' || v == null) ? null : parseInt(v,10);
+  function openModal(m){ m.classList.remove('hidden'); m.setAttribute('aria-hidden','false'); }
+  function closeModal(m){ m.classList.add('hidden');  m.setAttribute('aria-hidden','true'); }
+  function toLocalDT(val){
+    if(!val) return '';
+    const d = new Date(val);
+    if(isNaN(d)) return '';
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
 
-  const toIntOrNull = (v) => v === '' || v == null ? null : parseInt(v, 10);
+  // ---------- OTHERS: presets + chips (OUTPUT form) ----------
+  let othersItems = []; // e.g., ["Drain 20 mL", "Oral rinse 10 mL"]
+  const presetsKey = 'micu_others_presets_v1';
+  function loadPresets(){ try { const raw = localStorage.getItem(presetsKey); return raw ? JSON.parse(raw) : []; } catch { return []; } }
+  function savePresets(list){ try { localStorage.setItem(presetsKey, JSON.stringify(list)); } catch {} }
+  function upsertPreset(name){
+    let n = name.trim(); if (!n) return;
+    let list = loadPresets();
+    if (!list.includes(n)) { list.unshift(n); if (list.length > 12) list = list.slice(0, 12); savePresets(list); }
+  }
+  function renderOthersPresets(){
+    const wrap = $('othersPresets'); if (!wrap) return;
+    wrap.innerHTML = '';
+    loadPresets().forEach(n=>{
+      const chip = document.createElement('span');
+      chip.className = 'chip'; chip.style.cursor='pointer';
+      chip.title = 'Click to use this name'; chip.textContent = n;
+      chip.onclick = ()=>{ const i = $('othersName'); if(i){ i.value=n; i.focus(); } };
+      wrap.appendChild(chip);
+    });
+  }
+  function renderOthersChips(){
+    const wrap = $('othersChips'); if (!wrap) return;
+    wrap.innerHTML = '';
+    othersItems.forEach((txt, idx) => {
+      const chip = document.createElement('span'); chip.className='chip';
+      const label = document.createElement('span'); label.textContent = txt;
+      const x = document.createElement('button'); x.type='button'; x.textContent='×';
+      x.setAttribute('aria-label','Remove');
+      x.onclick = () => { othersItems.splice(idx,1); renderOthersChips(); };
+      chip.appendChild(label); chip.appendChild(x); wrap.appendChild(chip);
+    });
+  }
 
-  async function fetchRecords() {
-    const tbody = document.getElementById('record-list');
+  document.addEventListener('DOMContentLoaded', () => {
+    const addBtn = $('othersAddBtn');
+    const nameEl = $('othersName');
+    const amtEl  = $('othersAmount');
+
+    renderOthersPresets();
+    renderOthersChips();
+
+    const addOthers = () => {
+      const name = (nameEl?.value || '').trim();
+      const amt  = (amtEl?.value || '').trim();
+      if (!name) return;
+      const piece = amt ? `${name} ${amt} mL` : name;
+      othersItems.push(piece);
+      upsertPreset(name);
+      nameEl.value = ''; amtEl.value = '';
+      renderOthersChips(); renderOthersPresets();
+    };
+    addBtn?.addEventListener('click', addOthers);
+    nameEl?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addOthers(); }});
+    amtEl?.addEventListener('keydown',  e=>{ if(e.key==='Enter'){ e.preventDefault(); addOthers(); }});
+  });
+
+  // ---------- Totals helpers ----------
+  function sumOthersMl(txt){
+    if(!txt) return 0;
+    const re = /(\d+(?:\.\d+)?)\s*mL/gi; let m, s = 0;
+    while((m = re.exec(txt))){ s += parseFloat(m[1]); }
+    return Math.round(s);
+  }
+  function rowTotal(item){
+    return (item.urineMl||0)
+         + (item.ngtResidualsMl||0)
+         + (item.vomitusMl||0)
+         + (item.stoolVolumeMl||0)
+         + sumOthersMl(item.others||'');
+  }
+  function computeTotals(items){
+    let running=0, day=0, night=0;
+    items.forEach(it=>{
+      const t = rowTotal(it);
+      running += t;
+      const d = it.timeStamp ? new Date(it.timeStamp) : null;
+      if(d && !isNaN(d)){
+        const h = d.getHours();
+        if(h >= 7 && h < 19) day += t; else night += t;
+      }
+    });
+    $('totRunning').textContent = `Running: ${running} mL`;
+    $('totDay').textContent     = `Day shift: ${day} mL`;
+    $('totNight').textContent   = `Night shift: ${night} mL`;
+  }
+
+  // ---------- CRUD (OUTPUT list, add, delete) ----------
+  async function fetchRecords(){
+    const tbody = $('record-list');
     tbody.innerHTML = '';
-    try {
+    try{
       const res = await fetch(API);
-      if (!res.ok) throw new Error(await res.text());
+      if(!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      data.forEach(item => {
-        const tr = document.createElement('tr');
 
-        const cells = [
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const edited = item.updatedAt ? fmtDateTime(item.updatedAt) : 'never';
+        tr.title = `Last edited: ${edited}`;
+
+        const stoolCell = item.stool
+          ? ['Yes', item.stoolForm || '', item.stoolVolumeMl!=null?`${item.stoolVolumeMl} mL`:'' ].filter(Boolean).join(' · ')
+          : 'No';
+
+        const cols = [
           item.id,
           fmtDateTime(item.timeStamp),
           item.urineMl ?? '',
           item.ngtResidualsMl ?? '',
           item.vomitusMl ?? '',
-          item.stool ? 'Yes' : 'No',
-          item.others ?? ''
+          stoolCell,
+          item.others ?? '',
+          rowTotal(item) + ' mL'
         ];
-        cells.forEach(val => {
+        // build cells and attach tooltips for ngt/vomit remarks
+        cols.forEach((val, idx)=>{
           const td = document.createElement('td');
           td.textContent = val;
+          if (idx===3 && item.ngtRemarks) td.title = item.ngtRemarks;
+          if (idx===4 && item.vomitusRemarks) td.title = item.vomitusRemarks;
           tr.appendChild(td);
         });
 
-        // Actions
-        const actionsTd = document.createElement('td');
-        actionsTd.className = 'actions';
+        const tdRemarks = document.createElement('td');
+        tdRemarks.className='remarks-cell';
+        tdRemarks.textContent = item.remarks ?? '';
+        if(item.remarks) tdRemarks.title = item.remarks;
+        tr.appendChild(tdRemarks);
 
-        const editBtn = document.createElement('button');
-        editBtn.textContent = 'Edit';
-        editBtn.onclick = async () => {
-          // simple prompts; in production, use a proper form/modal
-          const timeStamp = prompt('Time Stamp (YYYY-MM-DDTHH:mm:ss) or blank to keep', item.timeStamp ? item.timeStamp.replace('.000','') : '');
-          const urineMl = prompt('Urine mL', item.urineMl ?? '');
-          const ngtResidualsMl = prompt('NGT Residuals mL', item.ngtResidualsMl ?? '');
-          const vomitusMl = prompt('Vomitus mL', item.vomitusMl ?? '');
-          const stool = confirm('Is stool present? Click OK for Yes, Cancel for No.');
-          const others = prompt('Others', item.others ?? '');
+        const tdAct = document.createElement('td'); tdAct.className='col-actions';
+        const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent='Edit';
+        editBtn.onclick = () => editRecord(item);
+        const delBtn = document.createElement('button'); delBtn.className='btn danger'; delBtn.style.marginLeft='6px'; delBtn.textContent='Delete';
+        delBtn.onclick = () => deleteRecord(item.id);
+        tdAct.appendChild(editBtn); tdAct.appendChild(delBtn); tr.appendChild(tdAct);
 
-          const body = {
-            timeStamp: timeStamp ? timeStamp : item.timeStamp, // keep old if blank
-            urineMl: toIntOrNull(urineMl),
-            ngtResidualsMl: toIntOrNull(ngtResidualsMl),
-            vomitusMl: toIntOrNull(vomitusMl),
-            stool,
-            others: others || null
-          };
-
-          const res = await fetch(`${API}/${item.id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-          });
-          if (!res.ok) alert('Update failed: ' + res.status + ' ' + await res.text());
-          await fetchRecords();
-        };
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.onclick = async () => {
-          if (!confirm('Delete this record?')) return;
-          const res = await fetch(`${API}/${item.id}`, { method: 'DELETE' });
-          if (!res.ok) alert('Delete failed: ' + res.status + ' ' + await res.text());
-          await fetchRecords();
-        };
-
-        actionsTd.appendChild(editBtn);
-        actionsTd.appendChild(delBtn);
-        tr.appendChild(actionsTd);
         tbody.appendChild(tr);
       });
-    } catch (err) {
-      console.error('Fetch failed:', err);
-      alert('Load failed: ' + err.message);
+
+      computeTotals(data);
+    }catch(err){
+      console.error(err);
+      alert('Load failed: '+err.message);
     }
   }
 
-  document.getElementById('record-form').addEventListener('submit', async (e) => {
+  async function deleteRecord(id){
+    if(!confirm('Delete this record?')) return;
+    const r = await fetch(`${API}/${id}`, {method:'DELETE'});
+    if(!r.ok) return alert('Delete failed: '+r.status+' '+await r.text());
+    fetchRecords();
+  }
+
+  // ---------- Edit (OUTPUT Modal) ----------
+  async function editRecord(item){
+    $('edit_id').value = item.id;
+    $('edit_timeStamp').value    = toLocalDT(item.timeStamp);
+    $('edit_urineMl').value      = item.urineMl ?? '';
+    $('edit_ngtResidualsMl').value = item.ngtResidualsMl ?? '';
+    $('edit_vomitusMl').value    = item.vomitusMl ?? '';
+    $('edit_stool').checked      = !!item.stool;
+    $('edit_stoolForm').value    = item.stoolForm || '';
+    $('edit_stoolVolumeMl').value= item.stoolVolumeMl ?? '';
+    $('edit_ngtRemarks').value   = item.ngtRemarks || '';
+    $('edit_vomitusRemarks').value = item.vomitusRemarks || '';
+    $('edit_others').value       = item.others ?? '';
+    $('edit_remarks').value      = item.remarks ?? '';
+    openModal($('editModal'));
+  }
+
+  $('editSaveBtn').addEventListener('click', async (e)=>{
     e.preventDefault();
-    // Convert datetime-local to ISO with seconds
-    const tsRaw = document.getElementById('timeStamp').value; // e.g. "2025-10-14T19:45"
+    const id = Number($('edit_id').value);
+    let ts = $('edit_timeStamp').value;
+    if (ts && !/:..$/.test(ts)) ts += ':00';
+
     const body = {
-      timeStamp: tsRaw ? tsRaw + ':00' : null, // backend auto-fills if null
-      urineMl:         toIntOrNull(document.getElementById('urineMl').value),
-      ngtResidualsMl:  toIntOrNull(document.getElementById('ngtResidualsMl').value),
-      vomitusMl:       toIntOrNull(document.getElementById('vomitusMl').value),
-      stool:           document.getElementById('stool').checked,
-      others:          document.getElementById('others').value || null
+      timeStamp: ts || null,
+      urineMl:         toIntOrNull($('edit_urineMl').value),
+      ngtResidualsMl:  toIntOrNull($('edit_ngtResidualsMl').value),
+      vomitusMl:       toIntOrNull($('edit_vomitusMl').value),
+      stool:           $('edit_stool').checked,
+      stoolForm:       $('edit_stoolForm').value || null,
+      stoolVolumeMl:   toIntOrNull($('edit_stoolVolumeMl').value),
+      ngtRemarks:      $('edit_ngtRemarks').value || null,
+      vomitusRemarks:  $('edit_vomitusRemarks').value || null,
+      others:          $('edit_others').value || null,
+      remarks:         $('edit_remarks').value || null
     };
 
-    try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      });
-      if (!res.ok) throw new Error(await res.text());
-      e.target.reset();
-      await fetchRecords();
-    } catch (err) {
-      console.error('Create failed:', err);
-      alert('Add failed: ' + err.message);
-    }
+    const r = await fetch(`${API}/${id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){ alert('Update failed: '+r.status+' '+await r.text()); return; }
+
+    closeModal($('editModal'));
+    fetchRecords();
+  });
+
+  document.querySelectorAll('#editModal [data-close]').forEach(el=>{
+    el.addEventListener('click', ()=> closeModal($('editModal')));
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape' && !$('editModal').classList.contains('hidden')) closeModal($('editModal'));
+  });
+
+  // ---------- Add (OUTPUT) ----------
+  document.getElementById('record-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    let tsRaw = $('timeStamp').value;
+    if (tsRaw && tsRaw.includes('T') && !/:\d{2}$/.test(tsRaw)) tsRaw += ':00';
+
+    const body = {
+      timeStamp: tsRaw || null,
+      urineMl:         toIntOrNull($('urineMl').value),
+      ngtResidualsMl:  toIntOrNull($('ngtResidualsMl').value),
+      vomitusMl:       toIntOrNull($('vomitusMl').value),
+      stool:           $('stool').checked,
+      stoolForm:       $('stoolForm').value || null,
+      stoolVolumeMl:   toIntOrNull($('stoolVolumeMl').value),
+      ngtRemarks:      $('ngtRemarks').value || null,
+      vomitusRemarks:  $('vomitusRemarks').value || null,
+      others:          (othersItems.join('; ') || null),
+      remarks:         $('remarks').value || null
+    };
+
+    const r = await fetch(API, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok) return alert('Add failed: '+r.status+' '+await r.text());
+
+    e.target.reset();
+    othersItems = []; renderOthersChips(); fetchRecords();
   });
 
   fetchRecords();
@@ -498,7 +1192,520 @@ function displaySavedData(data) {
 }
 </script>
 
+<<<<<<< HEAD
 <button type="button" onclick="saveNeuroAssessment()">Save Neuro Data</button>
+=======
+<script>
+  // ===========================
+  // MECHANICAL VENTILATION CRUD
+  // ===========================
+
+  // Cache of last fetched MechVent rows
+  let MV_DATA = [];
+
+  const MV_API_BASE = '';
+  const MV_API = `${MV_API_BASE}/mechvent`;
+
+  // --- Create-form: show/hide "Other" textbox for Mode ---
+  (function bindModeOther(){
+    const sel = document.getElementById('mv_mode');
+    const other = document.getElementById('mv_mode_other');
+    if (!sel || !other) return;
+    const toggle = () => {
+      const show = sel.value === 'OTHER';
+      other.style.display = show ? 'block' : 'none';
+      if (!show) other.value = '';
+    };
+    sel.addEventListener('change', toggle);
+    toggle();
+  })();
+
+  // --- Small helpers (create form) ---
+  function mvToIso(val){ if(!val) return null; return val.length === 16 ? val + ':00' : val; }
+  const mvNum = id => { const v = document.getElementById(id).value; return v === '' ? null : Number(v); };
+  const mvVal = id => { const v = document.getElementById(id).value?.trim(); return v === '' ? null : v; };
+
+  // --- EDIT MODAL helpers ---
+  function mv_toggleEditOther(){
+    const sel = document.getElementById('mv_edit_mode');
+    const other = document.getElementById('mv_edit_mode_other');
+    if (!sel || !other) return;
+    const show = sel.value === 'OTHER';
+    other.style.display = show ? 'block' : 'none';
+    if (!show) other.value = '';
+  }
+
+  function mv_openEdit(item){
+    document.getElementById('mv_edit_id').value = item.id;
+    document.getElementById('mv_edit_recordedAt').value = toLocalDT(item.recordedAt || '') || '';
+    document.getElementById('mv_edit_intubated').checked = !!item.intubated;
+
+    const sel = document.getElementById('mv_edit_mode');
+    sel.value = item.mvMode || 'AC_VC';
+    document.getElementById('mv_edit_mode_other').value = item.mvModeOther || '';
+    mv_toggleEditOther();
+
+    document.getElementById('mv_edit_fio2').value        = item.fio2 ?? '';
+    document.getElementById('mv_edit_tvMl').value        = item.tvMl ?? '';
+    document.getElementById('mv_edit_burBpm').value      = item.burBpm ?? '';
+    document.getElementById('mv_edit_psCmh2o').value     = item.psCmh2o ?? '';
+    document.getElementById('mv_edit_p1Cmh2o').value     = item.p1Cmh2o ?? '';
+    document.getElementById('mv_edit_t1Seconds').value   = item.t1Seconds ?? '';
+    document.getElementById('mv_edit_ifrLpm').value      = item.ifrLpm ?? '';
+    document.getElementById('mv_edit_ieRatio').value     = item.ieRatio || '';
+    document.getElementById('mv_edit_peepCmh2o').value   = item.peepCmh2o ?? '';
+    document.getElementById('mv_edit_triggerSens').value = item.triggerSens ?? '';
+    document.getElementById('mv_edit_remarks').value     = item.remarks || '';
+
+    openModal(document.getElementById('mvEditModal'));
+  }
+
+  // --- Edit modal close & save wiring (once) ---
+  (function bindEditModalOnce(){
+    if (window.__mvEditModalBound) return;
+
+    document.querySelectorAll('[data-close-mv]').forEach(el=>{
+      el.addEventListener('click', ()=> closeModal(document.getElementById('mvEditModal')));
+    });
+
+    const sel = document.getElementById('mv_edit_mode');
+    if (sel) sel.addEventListener('change', mv_toggleEditOther);
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape' && !document.getElementById('mvEditModal').classList.contains('hidden')){
+        closeModal(document.getElementById('mvEditModal'));
+      }
+    });
+
+    document.getElementById('mvEditSaveBtn').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const id = Number(document.getElementById('mv_edit_id').value);
+
+      // validations
+      const mode = document.getElementById('mv_edit_mode').value;
+      const modeOther = (document.getElementById('mv_edit_mode_other').value || '').trim() || null;
+      const ie = (document.getElementById('mv_edit_ieRatio').value || '').trim() || null;
+
+      if (mode === 'OTHER' && !modeOther) {
+        alert("Please specify MV Mode when 'Other' is selected.");
+        return;
+      }
+      if (ie && !/^[0-9]+(\.[0-9]+)?:[0-9]+(\.[0-9]+)?$/.test(ie)) {
+        alert("I:E must be like '1:2' or '1:1.5'.");
+        return;
+      }
+
+      const toIso = (v)=> !v ? null : (v.length === 16 ? v + ':00' : v);
+      const n = (id)=>{ const v = document.getElementById(id).value; return v===''?null:Number(v); };
+
+      const body = {
+        recordedAt: toIso(document.getElementById('mv_edit_recordedAt').value),
+        intubated: document.getElementById('mv_edit_intubated').checked,
+        mvMode: mode,
+        mvModeOther: mode === 'OTHER' ? modeOther : null,
+        fio2: n('mv_edit_fio2'),
+        tvMl: n('mv_edit_tvMl'),
+        burBpm: n('mv_edit_burBpm'),
+        psCmh2o: n('mv_edit_psCmh2o'),
+        p1Cmh2o: n('mv_edit_p1Cmh2o'),
+        t1Seconds: n('mv_edit_t1Seconds'),
+        ifrLpm: n('mv_edit_ifrLpm'),
+        ieRatio: ie,
+        peepCmh2o: n('mv_edit_peepCmh2o'),
+        triggerSens: n('mv_edit_triggerSens'),
+        remarks: (document.getElementById('mv_edit_remarks').value || '').trim() || null
+      };
+
+      const r = await fetch(`${MV_API}/${id}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      if(!r.ok){
+        alert('Update (MechVent) failed: ' + r.status + ' ' + await r.text());
+        return;
+      }
+
+      closeModal(document.getElementById('mvEditModal'));
+      mvFetch();
+    });
+
+    window.__mvEditModalBound = true;
+  })();
+
+  // --- FETCH & RENDER (no button bindings here) ---
+  async function mvFetch(){
+    const tbody = document.getElementById('mechvent-list');
+    tbody.innerHTML = '';
+    try{
+      const r = await fetch(MV_API);
+      if(!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      MV_DATA = data;
+
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.id ?? ''}</td>
+          <td>${fmtDateTime(item.recordedAt) || ''}</td>
+          <td>${item.intubated ? 'Yes' : 'No'}</td>
+          <td>${item.mvMode}${item.mvMode==='OTHER' && item.mvModeOther ? ' ('+item.mvModeOther+')' : ''}</td>
+          <td>${item.fio2 ?? ''}</td>
+          <td>${item.tvMl ?? ''}</td>
+          <td>${item.burBpm ?? ''}</td>
+          <td>${item.psCmh2o ?? ''}</td>
+          <td>${item.p1Cmh2o ?? ''}</td>
+          <td>${item.t1Seconds ?? ''}</td>
+          <td>${item.ifrLpm ?? ''}</td>
+          <td>${item.ieRatio ?? ''}</td>
+          <td>${item.peepCmh2o ?? ''}</td>
+          <td>${item.triggerSens ?? ''}</td>
+          <td class="remarks-cell">${item.remarks ?? ''}</td>
+          <td class="col-actions">
+            <button class="btn ghost" data-edit="${item.id}">Edit</button>
+            <button class="btn danger" data-del="${item.id}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+    }catch(err){
+      console.error('MechVent load failed:', err);
+      alert('Load (MechVent) failed: ' + err.message);
+    }
+  }
+
+  // --- Table event delegation (Edit/Delete) ---
+  (function bindMvTableEvents(){
+    if (window.__mvTableBound) return;
+    const tbody = document.getElementById('mechvent-list');
+    tbody.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      // EDIT
+      if (btn.dataset.edit){
+        const id = btn.dataset.edit;
+        const item = MV_DATA.find(x => String(x.id) === String(id));
+        if (item) mv_openEdit(item);
+        return;
+      }
+
+      // DELETE
+      if (btn.dataset.del){
+        const id = btn.dataset.del;
+        if(!confirm('Delete this MechVent record?')) return;
+        const resp = await fetch(`${MV_API}/${id}`, { method:'DELETE' });
+        if(!resp.ok){
+          alert('Delete failed: ' + resp.status + ' ' + await resp.text());
+          return;
+        }
+        mvFetch();
+      }
+    });
+    window.__mvTableBound = true;
+  })();
+
+  // --- CREATE (submit) ---
+  document.getElementById('mechvent-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+
+    const mode = document.getElementById('mv_mode').value;
+    const modeOther = mvVal('mv_mode_other');
+    if (mode === 'OTHER' && !modeOther) {
+      alert("Please specify MV Mode when 'Other' is selected.");
+      return;
+    }
+    const ie = mvVal('mv_ieRatio');
+    if (ie && !/^[0-9]+(\.[0-9]+)?:[0-9]+(\.[0-9]+)?$/.test(ie)) {
+      alert("I:E must be like '1:2' or '1:1.5'.");
+      return;
+    }
+
+    const body = {
+      recordedAt: mvToIso(document.getElementById('mv_recordedAt').value),
+      intubated: document.getElementById('mv_intubated').checked,
+      mvMode: mode,                      // maps to enum on the backend
+      mvModeOther: mode === 'OTHER' ? modeOther : null,
+      fio2: mvNum('mv_fio2'),
+      tvMl: mvNum('mv_tvMl'),
+      burBpm: mvNum('mv_burBpm'),
+      psCmh2o: mvNum('mv_psCmh2o'),
+      p1Cmh2o: mvNum('mv_p1Cmh2o'),
+      t1Seconds: mvNum('mv_t1Seconds'),
+      ifrLpm: mvNum('mv_ifrLpm'),
+      ieRatio: ie,
+      peepCmh2o: mvNum('mv_peepCmh2o'),
+      triggerSens: mvNum('mv_triggerSens'),
+      remarks: mvVal('mv_remarks')
+    };
+
+    const r = await fetch(MV_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){
+      const t = await r.text();
+      alert('Add (MechVent) failed: ' + r.status + ' ' + t);
+      return;
+    }
+
+    e.target.reset();
+    const sel = document.getElementById('mv_mode');
+    if (sel) sel.value = 'AC_VC';
+    const other = document.getElementById('mv_mode_other');
+    if (other) other.style.display = 'none';
+
+    mvFetch();
+  });
+
+  // --- Initial load ---
+  mvFetch();
+</script>
+
+
+<!-- ========================================= -->
+<!-- NEW SCRIPT for OTHERS section -->
+<script>
+  // ECG and Insulin dropdowns
+  const ECG_OPTIONS = [
+    [0,'— ECG (optional) —'],[1,'Normal Sinus Rhythm (NSR)'],[2,'Sinus Tachycardia'],[3,'Sinus Bradycardia'],
+    [4,'Atrial Fibrillation'],[5,'Atrial Flutter'],[6,'Supraventricular Tachycardia (SVT)'],
+    [7,'Premature Ventricular Contractions (PVCs)'],[8,'Ventricular Tachycardia (VT)'],[9,'Ventricular Fibrillation (VF)'],
+    [10,'Asystole'],[11,'Heart Block – First Degree'],[12,'Heart Block – Second Degree (Mobitz I / Mobitz II)'],
+    [13,'Heart Block – Third Degree'],[14,'Paced Rhythm'],[15,'Other (Specify)']
+  ];
+  const INSULIN_TYPES = [[0,'— Insulin type (optional) —'],[1,'Isophane (NPH)'],[2,'Regular (Human)'],[3,'Glargine'],[4,'70/30 mix'],[5,'Other']];
+
+  function o_fillSelect(sel, options){
+    sel.innerHTML = '';
+    for (const [val,label] of options){
+      const opt = document.createElement('option'); opt.value = val || ''; opt.textContent = label; sel.appendChild(opt);
+    }
+  }
+  function o_enableIfOther(codeSel, txtEl){
+    const code = parseInt(codeSel.value||'0', 10);
+    const isOther = code === 15; txtEl.disabled = !isOther; if (!isOther) txtEl.value = '';
+  }
+  function o_toIso(val){ if(!val) return null; return val.length === 16 ? val + ':00' : val; }
+  function o_openModal(m){ m.classList.remove('hidden'); m.setAttribute('aria-hidden','false'); }
+  function o_closeModal(m){ m.classList.add('hidden');  m.setAttribute('aria-hidden','true'); }
+
+  async function o_fetchOthers(){
+    const tbody = document.getElementById('others-list');
+    tbody.innerHTML = '';
+    try{
+      const res = await fetch(O_API);
+      if(!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      data.forEach(item=>{
+        const tr = document.createElement('tr');
+        const edited = item.updatedAt ? fmtDateTime(item.updatedAt) : 'never';
+        tr.title = `Last edited: ${edited}`;
+
+        const ecg = item.ecgLabel || '';
+        const ecgTime = item.ecgTime ? fmtDateTime(item.ecgTime) : '';
+        const cbg = item.cbgMgdl ?? '';
+        const cbgTime = item.cbgTime ? fmtDateTime(item.cbgTime) : '';
+        const insulin = [item.insulinTypeLabel || '', item.insulinDoseUnits != null ? `${item.insulinDoseUnits} U` : '', item.insulinRoute || '']
+                          .filter(Boolean).join(' / ');
+        const insulinTime = item.insulinTimeGiven ? fmtDateTime(item.insulinTimeGiven) : '';
+
+        const cols = [ item.id, ecg, ecgTime, cbg, cbgTime, insulin, insulinTime, item.remarks || '' ];
+        cols.forEach(val=>{ const td = document.createElement('td'); td.textContent = val; tr.appendChild(td); });
+
+        const tdAct = document.createElement('td'); tdAct.className='col-actions';
+        const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent='Edit';
+        editBtn.onclick = () => o_openEdit(item);
+        const delBtn = document.createElement('button'); delBtn.className='btn danger'; delBtn.style.marginLeft='6px'; delBtn.textContent='Delete';
+        delBtn.onclick = () => o_delete(item.id);
+        tdAct.appendChild(editBtn); tdAct.appendChild(delBtn); tr.appendChild(tdAct);
+
+        tbody.appendChild(tr);
+      });
+    }catch(err){ console.error(err); alert('Load (Others) failed: '+err.message); }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    o_fillSelect(document.getElementById('ecgCode'), ECG_OPTIONS);
+    o_fillSelect(document.getElementById('insulinTypeCode'), INSULIN_TYPES);
+    o_fillSelect(document.getElementById('o_edit_ecgCode'), ECG_OPTIONS);
+    o_fillSelect(document.getElementById('o_edit_insulinTypeCode'), INSULIN_TYPES);
+
+    const ecgCode = document.getElementById('ecgCode');
+    const ecgOtherText = document.getElementById('ecgOtherText');
+    ecgCode.addEventListener('change', () => o_enableIfOther(ecgCode, ecgOtherText));
+
+    const o_ecgCode = document.getElementById('o_edit_ecgCode');
+    const o_ecgOtherText = document.getElementById('o_edit_ecgOtherText');
+    o_ecgCode.addEventListener('change', () => o_enableIfOther(o_ecgCode, o_ecgOtherText));
+
+    document.querySelectorAll('[data-close-others]').forEach(el=>{
+      el.addEventListener('click', ()=> o_closeModal(document.getElementById('othersEditModal')));
+    });
+
+    o_fetchOthers();
+    document.getElementById('others-form').addEventListener('submit', o_createOthers);
+    document.getElementById('othersEditSaveBtn').addEventListener('click', o_saveOthersEdit);
+  });
+
+  async function o_createOthers(e){
+    e.preventDefault();
+    const body = {
+      ecgCode:       parseInt(document.getElementById('ecgCode').value||'0',10) || null,
+      ecgOtherText:  document.getElementById('ecgOtherText').value || null,
+      ecgTime:       o_toIso(document.getElementById('ecgTime').value),
+      cbgMgdl:       toIntOrNull(document.getElementById('cbgMgdl').value),
+      cbgIsFasting:  document.getElementById('cbgIsFasting').checked || null,
+      cbgIsRandom:   document.getElementById('cbgIsRandom').checked || null,
+      cbgIsPreFeed:  document.getElementById('cbgIsPreFeed').checked || null,
+      cbgIsPostFeed: document.getElementById('cbgIsPostFeed').checked || null,
+      cbgTime:       o_toIso(document.getElementById('cbgTime').value),
+      insulinTypeCode:  parseInt(document.getElementById('insulinTypeCode').value||'0',10) || null,
+      insulinDoseUnits: toIntOrNull(document.getElementById('insulinDoseUnits').value),
+      insulinRoute:     document.getElementById('insulinRoute').value || null,
+      insulinTimeGiven: o_toIso(document.getElementById('insulinTimeGiven').value),
+      remarks: document.getElementById('remarksOthers').value || null
+    };
+    if (body.ecgCode !== 15) body.ecgOtherText = null;
+
+    const r = await fetch(O_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!r.ok){ alert('Add (Others) failed: '+r.status+' '+await r.text()); return; }
+
+    e.target.reset(); document.getElementById('ecgOtherText').disabled = true; o_fetchOthers();
+  }
+
+  function o_setSelValue(sel, val){ sel.value = (val ?? '') + ''; if (![...sel.options].some(o=>o.value === sel.value)) sel.value = ''; }
+
+  function o_openEdit(item){
+    document.getElementById('o_edit_id').value = item.id;
+    o_setSelValue(document.getElementById('o_edit_ecgCode'), item.ecgCode);
+    document.getElementById('o_edit_ecgOtherText').value = item.ecgOtherText || '';
+    o_enableIfOther(document.getElementById('o_edit_ecgCode'), document.getElementById('o_edit_ecgOtherText'));
+    document.getElementById('o_edit_ecgTime').value = toLocalDT(item.ecgTime || '') || '';
+
+    document.getElementById('o_edit_cbgMgdl').value = item.cbgMgdl ?? '';
+    document.getElementById('o_edit_cbgIsFasting').checked  = !!item.cbgIsFasting;
+    document.getElementById('o_edit_cbgIsRandom').checked   = !!item.cbgIsRandom;
+    document.getElementById('o_edit_cbgIsPreFeed').checked  = !!item.cbgIsPreFeed;
+    document.getElementById('o_edit_cbgIsPostFeed').checked = !!item.cbgIsPostFeed;
+    document.getElementById('o_edit_cbgTime').value = toLocalDT(item.cbgTime || '') || '';
+
+    o_setSelValue(document.getElementById('o_edit_insulinTypeCode'), item.insulinTypeCode);
+    document.getElementById('o_edit_insulinDoseUnits').value = item.insulinDoseUnits ?? '';
+    o_setSelValue(document.getElementById('o_edit_insulinRoute'), item.insulinRoute || '');
+    document.getElementById('o_edit_insulinTimeGiven').value = toLocalDT(item.insulinTimeGiven || '') || '';
+
+    document.getElementById('o_edit_remarks').value = item.remarks || '';
+    o_openModal(document.getElementById('othersEditModal'));
+  }
+
+  async function o_saveOthersEdit(e){
+    e.preventDefault();
+    const id = Number(document.getElementById('o_edit_id').value);
+    const body = {
+      ecgCode:       parseInt(document.getElementById('o_edit_ecgCode').value||'0',10) || null,
+      ecgOtherText:  document.getElementById('o_edit_ecgOtherText').value || null,
+      ecgTime:       o_toIso(document.getElementById('o_edit_ecgTime').value),
+      cbgMgdl:       toIntOrNull(document.getElementById('o_edit_cbgMgdl').value),
+      cbgIsFasting:  document.getElementById('o_edit_cbgIsFasting').checked || null,
+      cbgIsRandom:   document.getElementById('o_edit_cbgIsRandom').checked || null,
+      cbgIsPreFeed:  document.getElementById('o_edit_cbgIsPreFeed').checked || null,
+      cbgIsPostFeed: document.getElementById('o_edit_cbgIsPostFeed').checked || null,
+      cbgTime:       o_toIso(document.getElementById('o_edit_cbgTime').value),
+      insulinTypeCode:  parseInt(document.getElementById('o_edit_insulinTypeCode').value||'0',10) || null,
+      insulinDoseUnits: toIntOrNull(document.getElementById('o_edit_insulinDoseUnits').value),
+      insulinRoute:     document.getElementById('o_edit_insulinRoute').value || null,
+      insulinTimeGiven: o_toIso(document.getElementById('o_edit_insulinTimeGiven').value),
+      remarks: document.getElementById('o_edit_remarks').value || null
+    };
+    if (body.ecgCode !== 15) body.ecgOtherText = null;
+
+    const r = await fetch(`${O_API}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!r.ok){ alert('Update (Others) failed: '+r.status+' '+await r.text()); return; }
+    o_closeModal(document.getElementById('othersEditModal')); o_fetchOthers();
+  }
+
+  async function o_delete(id){
+    if(!confirm('Delete this record?')) return;
+    const r = await fetch(`${O_API}/${id}`, {method:'DELETE'});
+    if(!r.ok){ alert('Delete (Others) failed: '+r.status+' '+await r.text()); return; }
+    o_fetchOthers();
+  }
+</script>
+<!-- ========================================= -->
+ <script>
+(function(){
+  // List your accordion trigger/panel IDs here
+  const items = [
+    { trigger: 'output-trigger',   panel: 'output-panel'   },
+    { trigger: 'mechvent-trigger', panel: 'mechvent-panel' },
+    { trigger: 'others-trigger',   panel: 'others-panel'   },
+  ];
+
+  const singleOpen = false; // set to false if you want multiple open
+
+  const open = (btn, panel) => {
+    btn.setAttribute('aria-expanded','true');
+    panel.hidden = false;
+    panel.classList.add('is-open');
+    panel.style.maxHeight = panel.scrollHeight + 'px';
+    panel.addEventListener('transitionend', function onEnd(){
+      panel.style.maxHeight = 'none';
+      panel.removeEventListener('transitionend', onEnd);
+    });
+  };
+
+  const close = (btn, panel) => {
+    btn.setAttribute('aria-expanded','false');
+    panel.style.maxHeight = panel.scrollHeight + 'px';
+    void panel.offsetHeight; // reflow
+    panel.style.maxHeight = '0px';
+    panel.classList.remove('is-open');
+    panel.addEventListener('transitionend', function onEnd(){
+      panel.hidden = true;
+      panel.removeEventListener('transitionend', onEnd);
+    });
+  };
+
+  const refs = items.map(({trigger, panel}) => {
+    const btn = document.getElementById(trigger);
+    const pnl = document.getElementById(panel);
+    if(!btn || !pnl) return null;
+    // start closed
+    pnl.hidden = true;
+    pnl.style.maxHeight = '0px';
+    btn.addEventListener('click', () => {
+      const isOpen = btn.getAttribute('aria-expanded') === 'true';
+      if (singleOpen) {
+        refs.forEach(ref => {
+          if (!ref) return;
+          if (ref.btn !== btn) close(ref.btn, ref.pnl);
+        });
+      }
+      isOpen ? close(btn, pnl) : open(btn, pnl);
+    });
+    // keyboard niceties across headers
+    btn.addEventListener('keydown', e => {
+      const order = refs.filter(Boolean).map(r => r.btn);
+      const i = order.indexOf(btn);
+      if (e.key === 'ArrowDown') { e.preventDefault(); (order[i+1] || order[0]).focus(); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); (order[i-1] || order[order.length-1]).focus(); }
+      if (e.key === 'Home')      { e.preventDefault(); order[0].focus(); }
+      if (e.key === 'End')       { e.preventDefault(); order[order.length-1].focus(); }
+    });
+    return {btn, pnl};
+  }).filter(Boolean);
+
+  // If you want one of them open by default, call open(ref.btn, ref.pnl) here.
+  // Example: open(refs[0].btn, refs[0].pnl); // open OUTPUT initially
+})();
+</script>
+
+
+>>>>>>> tela-branch1
 
 </body>
 </html>
